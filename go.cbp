@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="go" />
+		<Option makefile_is_custom="1" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="go" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option parameters="&lt;test.cmds" />
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/go" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+			</Target>
+		</Build>
+		<Unit filename="Makefile" />
+		<Unit filename="src/analyzer/analyze.go" />
+		<Unit filename="src/analyzer/processor.go">
+			<Option compile="1" />
+		</Unit>
+		<Unit filename="src/commands/commands.go" />
+		<Unit filename="src/env/env.go" />
+		<Unit filename="src/env/mode.go" />
+		<Unit filename="src/env/modetab.go" />
+		<Unit filename="src/env/names.go" />
+		<Unit filename="src/env/print.go" />
+		<Unit filename="src/env/symtab.go" />
+		<Unit filename="src/go.go" />
+		<Unit filename="src/options/options.go" />
+		<Unit filename="src/results/results.go" />
+		<Unit filename="src/results/usages.go" />
+		<Unit filename="src/scanner/scanner.go" />
+		<Unit filename="src/server/pkg.go" />
+		<Unit filename="src/server/project.go" />
+		<Unit filename="src/server/server.go" />
+		<Unit filename="src/server/src.go" />
+		<Unit filename="src/test/test.go" />
+		<Unit filename="src/writer/writer.go" />
+		<Unit filename="test.cmds" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
