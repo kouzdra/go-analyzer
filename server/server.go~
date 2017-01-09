@@ -1,0 +1,37 @@
+package server
+
+import "os"
+import "fmt"
+import "bufio"
+import "strings"
+
+type Server struct {
+	inp *bufio.Scanner
+	out *bufio.Writer
+}
+
+func NewServer () * Server {
+	return &Server{bufio.NewScanner(os.Stdin),bufio.NewWriter(os.Stdout)}
+}
+
+func (s *Server) ReadCmd () Cmd {
+	if s.inp.Scan() {
+		return ParseCmd(s.inp.Text())
+	}
+	return ParseCmd("quit")
+}
+
+func (cmd Cmd) Repr () string {
+	return cmd.name + " " + strings.Join(cmd.args, " ")
+}
+
+func (cmd Cmd) Process () {
+	fmt.Printf ("<OK: %s>\n", cmd.Repr ())
+	if cmd.name == "quit" { os.Exit (0) }
+}
+
+func (s *Server) Run () {
+	for {
+		s.ReadCmd ().Process ()
+	}
+}

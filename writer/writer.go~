@@ -1,0 +1,37 @@
+package writer
+
+type Writer struct {
+	*bufio.Writer
+}
+
+func Put (out *bufio.Writer, s string)  {
+	out.WriteString(s)
+}
+
+func End (out *bufio.Writer, name string)  {
+	put (out, name)
+	put (out, "-END")
+	eol (out)
+	eol (out)
+	out.Flush()
+}
+
+func Begin (out *bufio.Writer, name string)  {
+	put (out, name)
+	sep (out)
+}
+
+func Sep (out *bufio.Writer)  {
+	put (out, " ")
+}
+
+func Eol (out *bufio.Writer)  {
+	put (out, "\n")
+}
+
+func Write (out *bufio.Writer, s string) {
+	put (out, "\"");
+	put (out, s);
+	put (out, "\"");
+}
+

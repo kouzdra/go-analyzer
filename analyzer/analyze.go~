@@ -1,0 +1,415 @@
+package analyzer
+
+//import "fmt"
+import "go/ast"
+import "go/token"
+import "writer"
+
+const (
+	Operator  = "Operator"
+	Separator = "Separator"
+	Keyword = "Keyword"
+	Comment = "Comment"
+	Token   = "Token"
+	Error   = "Error"
+	String  = "String"
+	Char    = "Char"
+	Number  = "Number"
+
+	Binary  = Operator
+	Unary   = Operator
+
+	VarRef  = "Var"
+	VarDef  = "VarDef"
+	ValRef  = "Var"
+	ValDef  = "VarDef"
+	PkgRef  = "Type"
+	PkgDef  = "TypeDef"
+	TypRef  = "Type"
+	TypDef  = "TypeDef"
+	FunRef  = "Meth"
+	FunDef  = "MethDef"
+	MthRef  = "Meth"
+	MthDef  = "MethDef"
+)
+
+type Analyzer struct {
+	FSet *token.FileSet
+	file *token.File
+	*writer.Writer
+	hils []result.HiMarker
+}
+
+func New(fSet *token.FileSet, w *writer.Writer) *Analyzer {
+	return &Analyzer{fSet, nil, w}
+}
+
+func (a *Analyzer) Offset (p token.Pos) int {
+	return a.file.Offset(p)
+}
+
+func (a *Analyzer) Hil (color string, n ast.Node) *Analyzer {
+	a.HilR(color, n.Pos(), n.End())
+	return a
+}
+
+func (a *Analyzer) HilAt (color string, p token.Pos, l int) *Analyzer {
+	return a.HilR(color, p, token.Pos(int (p) + l))
+}
+
+func (a *Analyzer) HilR (color string, beg token.Pos,  end token.Pos)  *Analyzer {
+	a.Writer.Put("  ").Put(color).Sep().WriteInt(a.Offset(beg)).Sep().WriteInt(a.Offset(end)).Eol()
+	return a
+}
+
+//===================================================================
+
+func (a *Analyzer) Stmt (s ast.Stmt) {
+	switch s := s.(type) {
+	case *ast.      ExprStmt: a.Expr(s.X)
+	case *ast.       BadStmt: a.Hil(Error, s)
+	case *ast.     BlockStmt: a.     BlockStmt(s)
+	case *ast.    AssignStmt: a.    AssignStmt(s)
+	case *ast.    ReturnStmt: a.    ReturnStmt(s)
+	case *ast.TypeSwitchStmt: a.TypeSwitchStmt(s)
+	case *ast.    SwitchStmt: a.    SwitchStmt(s)
+	case *ast.     RangeStmt: a.     RangeStmt(s)
+	case *ast.       ForStmt: a.       ForStmt(s)
+	case *ast.        GoStmt: a.        GoStmt(s)
+	case *ast.        IfStmt: a.        IfStmt(s)
+	case *ast.CaseClause: a.CaseClause(s)
+	//default: fmt.Println(s)
+	}
+}
+
+func (a *Analyzer) hilAssn (tok token.Token, pos token.Pos) {
+	switch tok {
+	case token.DEFINE: a.HilAt(Separator, pos, 2)
+	case token.ASSIGN: a.HilAt(Separator, pos, 1)
+	}
+}
+
+func (a *Analyzer) AssignStmt (s *ast.AssignStmt) {
+	for _, l := range s.Lhs { a.Expr(l) }
+	a.hilAssn (s.Tok, s.TokPos)
+	for _, r := range s.Rhs { a.Expr(r) }
+}
+
+func (a *Analyzer) BlockStmt (e *ast.BlockStmt) {
+	if e.Lbrace != 0 { a.HilAt(Token, e.Lbrace, 1) }
+	for _, s := range e.List { a.Stmt(s) }
+	if e.Rbrace != 0 { a.HilAt(Token, e.Rbrace, 1) }
+}
+
+func (a *Analyzer) ReturnStmt (s *ast.ReturnStmt) {
+	a.HilAt(Keyword, s.Return, 6)
+	for _, v := range s.Results { a.Expr(v) }
+}
+
+func (a *Analyzer) SwitchStmt (s *ast.SwitchStmt) {
+	a.HilAt(Keyword, s.Switch, 6)
+	if s.Init != nil { a.Stmt(s.Init) }
+	if s.Tag  != nil { a.Expr(s.Tag ) }
+	a.BlockStmt(s.Body)
+}
+
+func (a *Analyzer) TypeSwitchStmt (s *ast.TypeSwitchStmt) {
+	a.HilAt(Keyword, s.Switch, 6)
+	if s.Init != nil { a.Stmt(s.Init) }
+	a.Stmt(s.Assign)
+	a.BlockStmt(s.Body)
+}
+
+func (a *Analyzer) CaseClause (s *ast.CaseClause) {
+	if s.List == nil {
+		a.HilAt(Keyword, s.Case, 7)
+	} else {
+		a.HilAt(Keyword, s.Case, 4)
+		for _, v := range s.List { a.Expr(v) }
+	}
+	a.HilAt(Separator, s.Colon, 1)
+	for _, s := range s.Body { a.Stmt(s) }
+}
+
+func (a *Analyzer) ForStmt (s *ast.ForStmt) {
+	a.HilAt(Keyword, s.For, 3)
+	if s.Init != nil { a.Stmt(s.Init) }
+	if s.Cond != nil { a.Expr(s.Cond) }
+	if s.Post != nil { a.Stmt(s.Post) }
+	a.BlockStmt(s.Body)
+}
+
+func (a *Analyzer) RangeStmt (s *ast.RangeStmt) {
+	a.HilAt(Keyword, s.For, 3)
+	a.Expr(s.Key)
+	if s.Value != nil { a.Expr(s.Value) }
+	a.hilAssn (s.Tok, s.TokPos)
+	a.Expr(s.X)
+	a.BlockStmt(s.Body)
+}
+
+func (a *Analyzer) GoStmt (s *ast.GoStmt) {
+	a.HilAt(Keyword, s.Go, 2)
+	a.CallExpr(s.Call)
+}
+
+func (a *Analyzer) IfStmt (s *ast.IfStmt) {
+	a.HilAt(Keyword, s.If, 2)
+	if s.Init != nil { a.Stmt(s.Init) }
+	a.Expr(s.Cond)
+	a.BlockStmt(s.Body)
+	if s.Else != nil { a.Stmt(s.Else) }
+}
+
+//===================================================================
+
+func (a *Analyzer) Expr (e ast.Expr) {
+	switch e := e.(type) {
+	case *ast.         Ident: a.   Hil(VarRef, e)
+	case *ast.       BadExpr:     a.Hil(Error, e)
+	case *ast.      CallExpr: a.      CallExpr(e)
+	case *ast.     IndexExpr: a.     IndexExpr(e)
+	case *ast.     SliceExpr: a.     SliceExpr(e)
+	case *ast.     ParenExpr: a.     ParenExpr(e)
+	case *ast.     UnaryExpr: a.     UnaryExpr(e)
+	case *ast.    BinaryExpr: a.    BinaryExpr(e)
+	case *ast.  SelectorExpr: a.  SelectorExpr(e)
+	case *ast.  KeyValueExpr: a.  KeyValueExpr(e)
+	case *ast.TypeAssertExpr: a.TypeAssertExpr(e)
+	case *ast.  CompositeLit: a.  CompositeLit(e)
+	case *ast.      BasicLit: a.      BasicLit(e)
+	}
+}
+
+func (a *Analyzer) CallExpr (e * ast.CallExpr) {
+	a.Expr(e.Fun)
+	a.HilAt(Token, e.Lparen, 1)
+	for _, arg := range e.Args { a.Expr(arg) }
+	a.HilAt(Token, e.Rparen, 1)
+}
+
+func (a *Analyzer) IndexExpr (e * ast.IndexExpr) {
+	a.Expr(e.X)
+	a.HilAt(Token, e.Lbrack, 1)
+	a.Expr(e.Index)
+	a.HilAt(Token, e.Rbrack, 1)
+}
+
+func (a *Analyzer) SliceExpr (e * ast.SliceExpr) {
+	a.Expr(e.X)
+	a.HilAt(Token, e.Lbrack, 1)
+	if e.Low  != nil { a.Expr(e.Low ) }
+	if e.High != nil { a.Expr(e.High) }
+	if e.Max  != nil { a.Expr(e.Max ) }
+	a.HilAt(Token, e.Rbrack, 1)
+}
+
+func (a *Analyzer) ParenExpr (e * ast.ParenExpr) {
+	a.HilAt(Token, e.Lparen, 1)
+	a.Expr(e.X)
+	a.HilAt(Token, e.Rparen, 1)
+}
+
+func (a *Analyzer) SelectorExpr (e *ast.SelectorExpr) {
+	a.Expr(e.X)
+	a.Expr(e.Sel)
+}
+
+func (a *Analyzer) KeyValueExpr (e *ast.KeyValueExpr) {
+	a.Expr(e.Key)
+	a.HilAt(Separator, e.Colon, 1)
+	a.Expr(e.Value)
+}
+
+func (a *Analyzer) TypeAssertExpr (e *ast.TypeAssertExpr) {
+	a.Expr(e.X)
+	a.HilAt(Token, e.Lparen, 1)
+	a.Type(e.Type)
+	a.HilAt(Token, e.Rparen, 1)
+}
+
+func (a *Analyzer) UnaryExpr (e *ast.UnaryExpr) {
+	a.HilAt(Unary, e.OpPos, len(e.Op.String()))
+	a.Expr(e.X)
+}
+
+func (a *Analyzer) BinaryExpr (e *ast.BinaryExpr) {
+	a.Expr(e.X)
+	a.HilAt(Binary, e.OpPos, len(e.Op.String()))
+	a.Expr(e.Y)
+}
+
+func (a *Analyzer) BasicLit (c *ast.BasicLit) {
+	switch c.Kind {
+	case token.STRING: a.Hil(String   , c)
+	case token.  CHAR: a.Hil(Char     , c)
+	case token.   INT: a.Hil(Number   , c)
+	case token. FLOAT: a.Hil(Number   , c)
+	case token.  IMAG: a.Hil(Number   , c)
+	}
+}
+
+func (a *Analyzer) CompositeLit (e *ast.CompositeLit) {
+	a.Type(e.Type)
+	a.HilAt(Token, e.Lbrace, 1)
+	for _, elt := range e.Elts { a.Expr(elt) }
+	a.HilAt(Token, e.Rbrace, 1)
+}
+
+//===================================================================
+
+func (a *Analyzer) Type (t ast.Expr) {
+	//fmt.Println(t)
+	switch t := t.(type) {
+	case *ast.       Ident: a. Hil(TypRef, t)
+	case *ast.     BadExpr: a. Hil(Error,  t)
+	case *ast.     MapType: a.     MapType(t)
+	case *ast.    StarExpr: a.    StarType(t)
+	case *ast.   ArrayType: a.   ArrayType(t)
+	case *ast.  StructType: a.  StructType(t)
+	case *ast.SelectorExpr: a.SelectorType(t)
+	}
+}
+
+func (a *Analyzer) StarType (t *ast.StarExpr) {
+	a.HilAt(Operator, t.Star, 1)
+	a.Type(t.X)
+}
+
+func (a *Analyzer) SelectorType (t *ast.SelectorExpr) {
+	a.Type(t.X)
+	a.Type(t.Sel)
+}
+
+func (a *Analyzer) FuncType (t *ast.FuncType) {
+	a.HilAt(Keyword, t.Func, 4)
+	a.FieldList(t.Params )
+	a.FieldList(t.Results)
+}
+
+func (a *Analyzer) StructType (t *ast.StructType) {
+	a.HilAt(Keyword, t.Struct, 6)
+	a.FieldList(t.Fields)
+}
+
+func (a *Analyzer) ArrayType (t *ast.ArrayType) {
+	a.HilAt(Token, t.Lbrack, 1)
+	if t.Len != nil { a.Expr(t.Len) }
+	a.Expr(t.Elt)
+}
+
+func (a *Analyzer) MapType (t *ast.MapType) {
+	a.HilAt(Keyword, t.Map, 3)
+	a.Type(t.Key)
+	a.Type(t.Value)
+}
+
+//===================================================================
+
+func (a *Analyzer) Decl (d ast.Decl) {
+	switch d := d.(type) {
+	case *ast. BadDecl: a.Hil(Error, d)
+	case *ast. GenDecl: a. GenDecl(d)
+	case *ast.FuncDecl: a.FuncDecl(d)
+	//default: fmt.Println(d)
+	}
+}
+
+func (a *Analyzer) FuncDecl (d *ast.FuncDecl) {
+	a.FuncType(d.Type)
+	if d.Recv != nil { a.FieldList(d.Recv) }
+	a.Hil(FunDef, d.Name)
+	a.BlockStmt(d.Body)
+}
+
+func (a *Analyzer) GenDecl (d *ast.GenDecl) {
+	switch d.Tok {
+	case token.IMPORT: a.HilAt(Keyword, d.Pos(), 6)
+	case token.CONST : a.HilAt(Keyword, d.Pos(), 5)
+	case token.TYPE  : a.HilAt(Keyword, d.Pos(), 4)
+	case token.VAR   : a.HilAt(Keyword, d.Pos(), 3)
+	}
+
+	if d.Lparen != 0 { a.HilAt(Token, d.Lparen, 1) }
+
+	for _, s := range d.Specs {
+		switch s := s.(type) {
+		case *ast.ImportSpec: a.ImportSpec(s)
+		case *ast. ValueSpec: a. ValueSpec(s)
+		case *ast.  TypeSpec: a.  TypeSpec(s)
+		}
+	}
+
+	if d.Rparen != 0 { a.HilAt(Token, d.Rparen, 1) }
+}
+
+func (a *Analyzer) Field (f *ast.Field) {
+	for _, id := range f.Names {
+		a.Hil (VarDef, id)
+	}
+	//fmt.Println(f.Type)
+	a.Type (f.Type)
+	if f.Tag != nil { a.BasicLit (f.Tag) }
+	if f.Comment != nil { a.Hil (Comment, f.Comment) }
+}
+
+func (a *Analyzer) FieldList (fl *ast.FieldList) {
+	if fl != nil {
+		if fl.Opening != 0 { a.HilAt(Token, fl.Opening, 1) }
+		for _, f := range fl.List {
+			a.Field(f)
+		}
+		if fl.Closing != 0 { a.HilAt(Token, fl.Closing, 1) }
+	}
+}
+
+//===================================================================
+
+func (a *Analyzer) ImportSpec (imp *ast.ImportSpec) {
+	if imp.Name != nil { a.Hil (PkgDef, imp.Name) }
+	a.BasicLit(imp.Path)
+	if imp.Comment != nil { a.Hil (Comment, imp.Comment) }
+}
+
+func (a *Analyzer) ValueSpec (v *ast.ValueSpec) {
+	for _, id := range v.Names {
+		a.Hil (ValDef, id)
+	}
+	if v.Type != nil {
+		a.Type (v.Type)
+	}
+	for _, e := range v.Values {
+		a.Expr (e)
+	}
+	if v.Comment != nil { a.Hil (Comment, v.Comment) }
+}
+
+func (a *Analyzer) TypeSpec (t *ast.TypeSpec) {
+	a.Hil (TypDef, t.Name)
+	a.Type (t.Type)
+	if t.Comment != nil { a.Hil (Comment, t.Comment) }
+}
+
+//===================================================================
+
+func (a *Analyzer) File (f *ast.File) {
+	a.HilAt (Keyword, f.Package, 7)
+	a.Hil   (PkgDef , f.Name)
+	if f.Doc != nil { a.Hil (Comment, f.Doc) }
+ 	for _, c    := range f.Comments   { a.Hil   (Comment, c) }
+	for _, decl := range f.Decls      { a.Decl  (decl)       }
+ 	//for _, id   := range f.Unresolved { a.Hil   (Error, id)  }
+}
+
+//===================================================================
+
+func (a *Analyzer) Analyze (no int, f *ast.File) {
+	a.file = a.FSet.File(f.Package)
+	a.Writer.Beg("ERRORS-CLEAR").Eol().End("ERRORS-CLEAR")
+	a.Writer.Beg("ERRORS").Write(a.file.Name()).Sep().WriteInt(no).Eol().End("ERRORS")
+	a.Writer.Beg("FONTIFY").Write(a.file.Name()).Sep().Write(a.file.Name()).Sep().
+		WriteInt(no).Sep().WriteInt(0).Sep().WriteInt(a.file.Size()).Eol()
+
+	a.File(f)
+	a.Writer.End("FONTIFY")
+}

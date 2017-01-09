@@ -1,0 +1,25 @@
+package server
+
+import "os"
+import "fmt"
+import "result"
+import "strings"
+
+type Cmd struct {
+	name string
+	args [] string
+}
+
+func ParseCmd (line string) Cmd {
+	var args = strings.Split(line, " ")
+	return Cmd{args[0], args[1:]}
+}
+
+func (cmd Cmd) Repr () string {
+	return cmd.name + " " + strings.Join(cmd.args, " ")
+}
+
+func (cmd Cmd) Process () {
+	result.PlainText{fmt.SPrintf ("<OK: %s>\n", cmd.Repr ())}
+	if cmd.name == "quit" { os.Exit (0) }
+}

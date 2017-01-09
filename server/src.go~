@@ -1,0 +1,47 @@
+package server
+
+import "fmt"
+import "io/ioutil"
+import "path"
+import "path/filepath"
+import "go/token"
+import "go/build"
+import "go/parser"
+import "go/printer"
+import "go/ast"
+
+type  Pkg struct {
+	Prj *Project
+	Dir  string
+	Name string
+	Pkg *build.Package
+	Srcs map [string] *Src
+}
+
+type Src struct {
+	Pkg *Pkg
+	Dir  string
+	Name string
+	FSet *token.FileSet
+	Ast  *ast.File
+}
+
+func (src *Src) ReParse () (*ast.File, *token.FileSet) {
+	fset := token.NewFileSet()
+	ast, err := parser.ParseFile (fset, filepath.Join(src.Dir, src.Name), nil, parser.ParseComments + parser.AllErrors)
+	if err != nil {
+		fmt.Printf("PARSE %s Failed:\n", src.Name)
+		fmt.Println(err)
+		return nil, nil
+	} else {
+		fmt.Printf("PARSE %s OK\n", src.Name)
+	}
+	return ast, fset
+}
+
+func (src *Src) UpdateAst () {
+	if src.Ast == nil {
+		src.Ast, src.FSet = src.ReParse ()
+	}
+}
+

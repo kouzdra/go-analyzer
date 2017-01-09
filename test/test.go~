@@ -1,0 +1,5 @@
+package test
+
+func f () {
+   i := i [1]
+}

@@ -1,0 +1,62 @@
+package server
+
+import "build"
+
+type Project struct {
+	*Server
+	Context build.Context
+	Dirs [] string
+	Pkgs []*build.Package
+}
+
+func NewProject(server *Server) *Project {
+	return &Project{server, build.Default, nil, nil}
+}
+
+func (p *Project) SetRoot (path string) {
+	p.Context.GOROOT = path
+}
+
+func (p *Project) SetPath (path string) {
+	p.Context.GOPATH = path
+}
+
+func (p *Project) GetSubDirs (dest [] string, root string) [] string {
+	dest = append (dest, root)
+	//fmt.Printf ("File: [%s]\n", root)
+	files, _ := ioutil.ReadDir (root)
+	for _, file := range files {
+		if file.IsDir () {
+			dest = p.GetSubDirs (dest, filepath.Join (root, file.Name()))
+		}
+	}
+	return dest
+}
+
+func  (p *Project) GetDirs () {
+	dirs := make ([]string, 0, 100)
+	for _, dir := range p.Context.SrcDirs () {
+		p.Server.Writer.Log(dir)
+		dirs = p.GetSubDirs(dirs, dir)
+	}
+	p.Dirs = dirs
+}
+
+func  (p *Project) GetPackages () {
+	pkgs := make ([]*build.Package, 0, len (p.Dirs))
+	for _, dir := range p.Dirs {
+		pkg, err := p.Context.ImportDir (dir, 0)
+		if err == nil { 
+			pkgs = append (pkgs, pkg) 
+		}
+	}
+	p.Pkgs = pkgs
+}
+
+func   (p *Project) Load () {
+	p.GetDirs ()
+	fmt.Printf ("%d dirs found\n", len (p.Dirs))
+	p.GetPackages()
+	fmt.Printf ("%d pkgs found\n", len (p.Pkgs))
+}
+

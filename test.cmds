@@ -1,0 +1,13 @@
+go-root /
+go-path "/home/msk/WORK/cf-c/go"
+load-project
+analyze -n 9 "/home/msk/WORK/cf-c/go/src/test/test.go
+complete /home/msk/WORK/cf-c/go/src/test/test.go 118
+complete /home/msk/WORK/cf-c/go/src/test/test.go 119
+#find-files "" system 40
+#changed "/home/msk/WORK/cf-c/go/src/test/test.go" "a" 3 4
+#analyze -n 9 "/home/msk/WORK/cf-c/go/src/test/test.go
+#analyze -n 20 "/home/msk/WORK/cf-c/go/src/analyzer/analyze.go"
+#file-in-project -n 23 "/home/msk/WORK/cf-c/go/src/writer/writer.go"
+#quit
+

@@ -1,0 +1,15 @@
+package result
+
+import "bufio"
+
+type Result interface {
+	Write(out *bufio.Writer)
+}
+
+type PlainText struct {
+	text string
+}
+
+func (r *PlainText) Write(out *bufio.Writer) {
+	out.Write ("GO: " + r.text)
+}
