@@ -2,7 +2,7 @@ package server
 
 import "os"
 import "io"
-import "results"
+import "github.com/kouzdra/go-analyzer/results"
 import "path/filepath"
 import "go/scanner"
 import "go/parser"

@@ -8,10 +8,10 @@ import "path/filepath"
 import "go/build"
 import "go/token"
 import "go/ast"
-import "env"
-import "analyzer"
-import "results"
-import "options"
+import "github.com/kouzdra/go-analyzer/env"
+import "github.com/kouzdra/go-analyzer/analyzer"
+import "github.com/kouzdra/go-analyzer/results"
+import "github.com/kouzdra/go-analyzer/options"
 
 type Project struct {
 	*Server

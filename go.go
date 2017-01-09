@@ -1,11 +1,12 @@
+
 package main
 
-import "server"
+import "github.com/kouzdra/go-analyzer/server"
 //import "os"
 //import "log"
 //import "runtime"
 //import "runtime/pprof"
-import "env"
+import "github.com/kouzdra/go-analyzer/env"
 //import "flag"
 
 var f_main = env.Put("main")

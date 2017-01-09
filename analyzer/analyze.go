@@ -7,9 +7,9 @@ import "strconv"
 import "go/ast"
 import "go/token"
 import "go/scanner"
-import "writer"
-import "results"
-import "env"
+import "github.com/kouzdra/go-analyzer/writer"
+import "github.com/kouzdra/go-analyzer/results"
+import "github.com/kouzdra/go-analyzer/env"
 
 const (
 	Operator  = "Operator"

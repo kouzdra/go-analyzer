@@ -1,6 +1,6 @@
 package results
 
-import "writer"
+import "github.com/kouzdra/go-analyzer/writer"
 import "go/token"
 
 type Result interface {

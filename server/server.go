@@ -3,11 +3,11 @@ package server
 import "os"
 import "fmt"
 import "strings"
-import "results"
-import "writer"
-import "scanner"
+import "github.com/kouzdra/go-analyzer/results"
+import "github.com/kouzdra/go-analyzer/writer"
+import "github.com/kouzdra/go-analyzer/scanner"
 import "strconv"
-import "commands"
+import "github.com/kouzdra/go-analyzer/commands"
 
 type Server struct {
 	*scanner.Scanner

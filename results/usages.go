@@ -1,7 +1,7 @@
 package results
 
 import "sort"
-import "writer"
+import "github.com/kouzdra/go-analyzer/writer"
 
 const (
 	Def = "def"

@@ -4,7 +4,7 @@ import "os"
 import "fmt"
 import "bufio"
 import "strconv"
-import "options"
+import "github.com/kouzdra/go-analyzer/options"
 import "go/token"
 
 type Writer struct {

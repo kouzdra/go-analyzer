@@ -4,8 +4,8 @@ import "os"
 import "fmt"
 import "bufio"
 import "strings"
-import "commands"
-import "options"
+import "github.com/kouzdra/go-analyzer/commands"
+import "github.com/kouzdra/go-analyzer/options"
 
 type Scanner struct {
 	*bufio.Scanner

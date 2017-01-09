@@ -17,3 +17,6 @@ clean:
 
 $(P)::
 	$(EXPS) go build $(GOPATH)/src/github.com/kouzdra/go-analyzer/$(P).go
+
+commit:
+	git commit -a

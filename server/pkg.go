@@ -2,7 +2,7 @@ package server
 
 import "go/build"
 //import "fmt"
-import "env"
+import "github.com/kouzdra/go-analyzer/env"
 
 type  Pkg struct {
 	Prj *Project
