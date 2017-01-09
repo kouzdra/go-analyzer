@@ -16,4 +16,4 @@ clean:
 	$(EXPS) go clean
 
 $(P)::
-	$(EXPS) go build src/$(P).go
+	$(EXPS) go build $(GOPATH)/src/github.com/kouzdra/go-analyzer/$(P).go
