@@ -1,4 +1,4 @@
-package server
+package project
 
 import "go/build"
 //import "fmt"
@@ -29,9 +29,9 @@ func (pkg *Pkg) UpdateAsts () {
 		gbl := env.NewBldr ()
 		lcl := env.NewBldr ()
 		//lcl.Nested (gbl)
-		pkg.Prj.Server.MsgF ("+Update Package %s\n", pkg.Name)
+		//pkg.Prj.Server.MsgF ("+Update Package %s\n", pkg.Name)
 		for _, src := range pkg.Srcs {
-                        pkg.Prj.Server.MsgF ("+--Update File %s\n", src.Name)
+                        //pkg.Prj.Server.MsgF ("+--Update File %s\n", src.Name)
                         src.UpdateAst ()
 		}
 		pkg.EnvGbl = gbl.Close ()

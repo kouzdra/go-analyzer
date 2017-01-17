@@ -1,4 +1,3 @@
-
 package main
 
 import "github.com/kouzdra/go-analyzer/server"

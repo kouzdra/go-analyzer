@@ -7,7 +7,7 @@ import "strconv"
 import "go/ast"
 import "go/token"
 import "go/scanner"
-import "github.com/kouzdra/go-analyzer/writer"
+//import "github.com/kouzdra/go-analyzer/writer"
 import "github.com/kouzdra/go-analyzer/results"
 import "github.com/kouzdra/go-analyzer/env"
 
@@ -91,7 +91,7 @@ func NewKer(modeTab *env.ModeTab) *Ker {
 	return &res
 }
 
-func New(ker *Ker, fSet *token.FileSet, w *writer.Writer, collect  bool) *Analyzer {
+func New(ker *Ker, fSet *token.FileSet, collect  bool) *Analyzer {
 	var res Analyzer
 	res.Ker = ker
 	res.FSet = fSet

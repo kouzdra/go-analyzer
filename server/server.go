@@ -12,7 +12,7 @@ import "github.com/kouzdra/go-analyzer/commands"
 type Server struct {
 	*scanner.Scanner
 	*writer .Writer
-	Project *Project
+	*Project
 }
 
 func NewServer () * Server {
@@ -44,22 +44,22 @@ func (s *Server) Process (cmd commands.Cmd) {
 		return true
 	}
 	switch cmd.Name {
-	case "go-path": if chk(1) { s.Project.SetPath (cmd.Args [0]) }
-	case "go-root": if chk(1) { s.Project.SetRoot (cmd.Args [0]) }
+	case "go-path": if chk(1) { s.Project.Project.SetPath (cmd.Args [0]) }
+	case "go-root": if chk(1) { s.Project.Project.SetRoot (cmd.Args [0]) }
 	case "load-project": {
-		s.Project.Load ()
-		s.Msg(fmt.Sprintf ("%d dirs found", len (s.Project.Dirs)))
+		s.Project.Project.Load ()
+		s.Msg(fmt.Sprintf ("%d dirs found", len (s.Project.Project.Dirs)))
 		//s.Msg(fmt.Sprintf ("%d pkgs found", len (s.Project.Pkgs)))
 	}
 	case "reload": if chk (1) {
-		if src, err := s.Project.GetSrc(cmd.Args[0]); src != nil {
+		if src, err := s.Project.Project.GetSrc(cmd.Args[0]); src != nil {
 			src.Reload()
 		} else {
 			s.Msg(err.Error())
 		}
 	}
 	case "changed": if chk(4) {
-		if src, err := s.Project.GetSrc(cmd.Args[0]); src != nil {
+		if src, err := s.Project.Project.GetSrc(cmd.Args[0]); src != nil {
 			beg, _ := strconv.Atoi(cmd.Args[2])
 			end, _ := strconv.Atoi(cmd.Args[3])
 			src.Changed(beg, end, cmd.Args[1])
