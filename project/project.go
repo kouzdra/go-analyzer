@@ -1,6 +1,7 @@
 package project
 
 import "fmt"
+import "log"
 import "strings"
 import "io/ioutil"
 import "path"
@@ -26,18 +27,22 @@ func NewProject() *Project {
 }
 
 func (p *Project) SetRoot (path string) {
+	p.MsgF ("ROOT=%s", path)
 	p.Context.GOROOT = path
 }
 
 func (p *Project) SetPath (path string) {
+	p.MsgF ("PATH=%s", path)
 	p.Context.GOPATH = path
 }
 
 func (s *Project) Msg (msg string) {
+	log.Printf ("PRJ: %s", msg)
 	//results.Message{msg}.Write(s.Writer)
 }
 
 func (s *Project) MsgF (f string, args... interface{}) {
+	log.Printf ("PRJ: %s", fmt.Sprintf (f, args...))
 	//results.Message{fmt.Sprintf (f, args...)}.Write(s.Writer)
 }
 
