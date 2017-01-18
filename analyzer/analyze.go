@@ -29,8 +29,8 @@ const (
 	VarDef  = "VarDef"
 	ConRef  = "Con"
 	ConDef  = "ConDef"
-	ValRef  = "Var"
-	ValDef  = "VarDef"
+	ValRef  = VarRef
+	ValDef  = VarDef
 	TypRef  = "Type"
 	TypDef  = "TypeDef"
 	FunRef  = "Meth"
