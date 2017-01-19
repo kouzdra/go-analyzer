@@ -1,7 +1,8 @@
 package project
 
-import "os"
-import "io"
+//import "os"
+//import "io"
+import "io/ioutil"
 import "github.com/kouzdra/go-analyzer/results"
 import "path/filepath"
 import "go/scanner"
@@ -30,7 +31,13 @@ func (src *Src) FName () string {
 }
 
 func readFile (fname string) string {
-	if in, err := os.Open(fname); err != nil {
+	text, err := ioutil.ReadFile (fname)
+	if err == nil {
+		return string (text)
+	}
+	return ""
+
+	/*if in, err := os.Open(fname); err != nil {
 		return ""
 	} else {
 		defer in.Close ()
@@ -41,7 +48,7 @@ func readFile (fname string) string {
 			if err == io.EOF { return string(bytes) }
 			bytes = append(bytes, buf[0])
 		}
-	}
+	}*/
 }
 
 func (src *Src) Text() string {
@@ -61,11 +68,18 @@ func (src *Src) Reload () {
 	src.Pkg.Reload ()
 }
 
+func (src *Src) SetText (text string) {
+	src.Reload ()
+	src.text = text
+	src.actual = true
+}
+
 func (src *Src) Changed (pos int, end int, newText string) {
 	old := src.Text()
-	src.Reload()
-	src.text = old[:pos] + newText + old[end:]
-	src.actual = true
+	src.SetText (old[:pos] + newText + old[end:])
+	//src.Reload()
+	//src.text = old[:pos] + newText + old[end:]
+	//src.actual = true
 }
 
 func (src *Src) ReParse () (*token.File, *ast.File, scanner.ErrorList) {

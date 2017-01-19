@@ -2,6 +2,7 @@ package analyzer
 
 //import "os"
 //import "fmt"
+import "regexp"
 import "path"
 import "strconv"
 import "go/ast"
@@ -889,8 +890,13 @@ func (a *Analyzer) AnalyzeFileBody (f *ast.File) {
 
 func (a *Analyzer) SetOuterErrors (e scanner.ErrorList) {
 	for _, err := range e {
+		length := 1
+		prefix := "expected '.', found 'IDENT' "
+		if res, _ := regexp.MatchString (prefix + "[_A-Za-z]+", err.Msg); res {
+			length = len (err.Msg) - len (prefix)
+		}
 		pos := a.file.Pos(err.Pos.Offset)
-		a.Error (pos, pos+1, err.Msg)
+		a.Error (pos, token.Pos (int (pos)+length), err.Msg)
 	}
 }
 

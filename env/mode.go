@@ -320,7 +320,8 @@ func (v *Array) Equals (m Mode) bool {
         switch m := m.(type) {
         case *Array:
                 if v.Size != m.Size && (v.Size == nil || m.Size == nil) { return false }
-                return *v.Size == *m.Size && v.Elem.Equals (m.Elem)
+		//log.Printf ("v.size=%v m.size=%v\n", v.Size, m.Size)
+                return (v.Size == nil && m.Size == nil || *v.Size == *m.Size) && v.Elem.Equals (m.Elem)
         default: return false
         }
 }
