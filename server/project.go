@@ -24,11 +24,11 @@ func NewProject(server *Server) *Project {
 }
 
 /*func (p *Project) SetRoot (path string) {
-	p.Context.GOROOT = path
+	p.SetRoot (path)
 }
 
 func (p *Project) SetPath (path string) {
-	p.Context.GOPATH = path
+	p.SetPath (path)
 }
 */
 //-------------------------------------------------------------------

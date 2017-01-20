@@ -17,13 +17,19 @@ import "github.com/kouzdra/go-analyzer/results"
 type Project struct {
 	Context build.Context
 	Dirs [] string
+	Tree [] Dir
 	Pkgs map [string]*Pkg
 	FSet *token.FileSet
 	ModeTab *env.ModeTab
 }
 
+type Dir struct {
+	Path string
+	Sub [] Dir
+}
+
 func NewProject() *Project {
-	return &Project{build.Default, nil, nil, token.NewFileSet(), env.NewModeTab ()}
+	return &Project{Context:build.Default, FSet:token.NewFileSet(), ModeTab:env.NewModeTab ()}
 }
 
 func (p *Project) SetRoot (path string) {
@@ -48,16 +54,17 @@ func (s *Project) MsgF (f string, args... interface{}) {
 
 //-------------------------------------------------------------------
 
-func (p *Project) GetSubDirs (dest [] string, root string) [] string {
-	dest = append (dest, root)
+func (p *Project) GetSubDirs (dest [] string, rootPath string, rootName string, tree [] Dir) ([] string, [] Dir) {
+	dest = append (dest, rootPath)
 	//fmt.Printf ("File: [%s]\n", root)
-	files, _ := ioutil.ReadDir (root)
+	files, _ := ioutil.ReadDir (rootPath)
+	subTree := make ([]Dir, 0)
 	for _, file := range files {
 		if file.IsDir () {
-			dest = p.GetSubDirs (dest, filepath.Join (root, file.Name()))
+			dest, subTree = p.GetSubDirs (dest, filepath.Join (rootPath, file.Name()), file.Name(), subTree)
 		}
 	}
-	return dest
+	return dest, append (tree, Dir{rootPath, subTree})
 }
 
 func (p *Project) GetPkg (bpkg *build.Package) *Pkg {
@@ -75,11 +82,13 @@ func (p *Project) GetPkg (bpkg *build.Package) *Pkg {
 
 func  (p *Project) GetDirs () {
 	dirs := make ([]string, 0, 100)
+	tree := make ([]Dir, 0)
 	for _, dir := range p.Context.SrcDirs () {
 		//p.Server.Writer.Log(dir)
-		dirs = p.GetSubDirs(dirs, dir)
+		dirs, tree = p.GetSubDirs(dirs, dir, dir, tree)
 	}
 	p.Dirs = dirs
+	p.Tree = tree
 }
 
 func  (p *Project) GetPackages () {
