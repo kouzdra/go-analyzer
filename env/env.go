@@ -88,7 +88,7 @@ func (e *EnvBldr) Reset (m Mark) {
 }
 
 func (e *EnvBldr) Close () *Env {
-        hsize := 1
+        hsize := uint (1)
         for d := e.Decls; d != nil; d = d.Next { hsize ++ }
         res := &Env{e.Subs, make ([]*DeclList, hsize, hsize)}
         for d := e.Decls; d != nil; d = d.Next {
@@ -129,7 +129,7 @@ func (e *Subs) Find (n *Name) (*Decl, bool) {
 
 func (e *Env) Find (n *Name) (*Decl, bool) {
         //fmt.Printf("%#v name=%d\n", e.Decls, n.Hash)
-        h := n.Hash % len(e.Decls)
+        h := n.Hash % uint (len(e.Decls))
         for d := e.Decls[h]; d != nil; d = d.Next {
                 if d.Name == n { return &d.Decl, false }
         }

@@ -11,7 +11,7 @@ var Null  = Put("<NONE>")
 
 type Name struct {
         Name string
-        Hash int
+        Hash uint
         Next * Name
 }
 
@@ -21,9 +21,9 @@ func (n *Name) Gbl () bool {
 
 var Names [1024*128]*Name
 
-func Hash(name string) int {
-        res := 0
-        for i := 0; i != len(name); i++ { res = (res << 1) + int(name[i]) }
+func Hash(name string) uint {
+        res := uint (0)
+        for i := 0; i != len(name); i++ { res = uint (res << 1) + uint(name[i]) }
         return res;
 }
 
@@ -31,8 +31,8 @@ func Find (name string) *Name {
         return FindHash(name, Hash(name))
 }
 
-func FindHash (name string, hash int) *Name {
-        for cell := Names[hash%len(Names)]; cell != nil; cell = cell.Next {
+func FindHash (name string, hash uint) *Name {
+        for cell := Names[hash%uint (len (Names))]; cell != nil; cell = cell.Next {
                 if (cell.Name == name) {
                         return cell
                 }
@@ -45,9 +45,10 @@ func Put(name string) *Name {
         hash := Hash(name)
         cell := FindHash(name, hash)
         if cell == nil {
-                cell = &Name {name, hash, Names[hash%len(Names)]}
+		hh := hash%uint (len(Names))
+                cell = &Name {name, hash, Names[hh]}
                 //fmt.Printf("New: %s\n", name)
-                Names[hash%len(Names)] = cell
+                Names[hh] = cell
         }
         return cell
 }
