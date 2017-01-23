@@ -158,7 +158,7 @@ func (p *CompleteProc) Before (n ast.Node) bool {
 	return true
 }
 
-func (p *Project) Complete (src *Src, no int, pos int) *results.Completion {
+func (p *Project) Complete (src *Src, pos int) *results.Completion {
 	src.UpdateAst()
 	a := analyzer.New(analyzer.NewKer (p.ModeTab), p.FSet, false)
 	completeProcessor := CompleteProc{nil, analyzer.Processor{a}, token.Pos(pos)}
