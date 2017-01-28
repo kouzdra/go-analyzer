@@ -139,16 +139,26 @@ type CompleteProc struct {
 	Pos token.Pos
 }
 func (p *CompleteProc) Before (n ast.Node) bool {
+	//log.Printf ("Node %d:%d %v\n", n.Pos(), n.End (), n)
 	if n.Pos () <= p.Pos && p.Pos <= n.End () {
 		switch n := n.(type) {
 		case *ast.Ident:
 			pref := n.Name[:p.Pos-n.Pos()]
                         //fmt.Printf ("Compl: [%s] at %d:%d, Req: %d, Pref=[%s]\n", n.Name, n.Pos (), n.End (), p.Pos, pref)
 			res := make([]results.Choice, 0, 100)
+			//loc := p.file.Position (n.Pos)
 			p.CurrLcl.Scan(func (d *env.Decl) bool {
 				nm := d.Name.Name
 				if strings.HasPrefix (nm, pref) {
-					res = append (res, results.Choice{"VAR", nm, nm, n.Pos(), token.Pos (int(n.Pos ()) + len(nm))})
+					k := "???"
+					switch d.Kind {
+					case env.KType:    k = "TYPE"
+					case env.KFunc:    k = "FUNC"
+					case env.KVar:     k = "VAR"
+					case env.KPackage: k = "PACKAGE"
+					case env.KConst:   k = "CONST"
+					}
+					res = append (res, results.Choice{k, nm, nm, n.Pos(), token.Pos (int(n.Pos ()) + len(nm))})
 				}
 				return true
 			})
@@ -161,7 +171,7 @@ func (p *CompleteProc) Before (n ast.Node) bool {
 func (p *Project) Complete (src *Src, pos int) *results.Completion {
 	src.UpdateAst()
 	a := analyzer.New(analyzer.NewKer (p.ModeTab), p.FSet, false)
-	completeProcessor := CompleteProc{nil, analyzer.Processor{a}, token.Pos(pos)}
+	completeProcessor := CompleteProc{nil, analyzer.Processor{a}, token.Pos(src.File.Base () + pos)}
 	a.NodeProc = &completeProcessor
 	a.Analyze(src.File, src.Ast)
 	return completeProcessor.Results
