@@ -190,7 +190,6 @@ func (a *Analyzer) Stmt (s ast.Stmt) {
 	a.WithNode (InStmt, s, func () {
 		switch s := s.(type) {
 		case *ast.      ExprStmt: a.Expr(s.X)
-		case *ast.      DeclStmt: a.Decl(s.Decl)
 		case *ast.       BadStmt: a.Hil(Error, s)
 		case *ast.     BlockStmt: a.     BlockStmt(s)
 		case *ast.    AssignStmt: a.    AssignStmt(s)
