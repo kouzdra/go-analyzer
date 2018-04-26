@@ -4,6 +4,8 @@ import "github.com/kouzdra/go-analyzer/names"
 
 type Path struct {
 	No uint
+	_hash uint
+	Base *Path
 	Name *names.Name
 }
 
@@ -18,14 +20,27 @@ var cnt = 0
 
 var pathTab [pathSize]pathElem
 
-func Make (base *Path, name *names.Name) *Path {
+func (base *Path) hashName (name *names.Name) uint {
+	return base.hash () + name.Hash
+}
+
+func (base *Path) hash () uint {
+	if base == nil {
+		return 0
+	} else {
+		return base._hash
+	}
+		
+}
+
+func (base *Path) Make (name *names.Name) *Path {
 	return nil // TODO
 }
 
 func Put (names ...*names.Name) *Path {
 	var path *Path = nil
 	for _, name := range names {
-		path = Make(path, name)
+		path = path.Make(name)
 	}
 	return path
 }
