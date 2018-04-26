@@ -35,6 +35,17 @@ func (s *Server) Run () {
 	}
 }
 
+func (s *Server) expand (str string) string {
+
+     return os.Expand(str, func (name string) string {
+         switch name {
+	 case "GOROOT": return s.Project.Project.Context.GOROOT
+	 case "GOPATH": return s.Project.Project.Context.GOPATH
+	 default: return os.Getenv(name)
+	 }
+     })
+}
+
 func (s *Server) Process (cmd commands.Cmd) {
 	chk := func (min int) bool {
 		if len(cmd.Args) < min {
@@ -68,12 +79,12 @@ func (s *Server) Process (cmd commands.Cmd) {
 		}
 	}
 	case "analyze": if chk(1) {
-		s.Project.Analyze(cmd.No, cmd.Args[0])
+		s.Project.Analyze(cmd.No, s.expand(cmd.Args[0]))
 	}
 	case "complete": if chk(2) {
 		pos, err := strconv.Atoi(cmd.Args[1])
 		if err == nil {
-			s.Project.Complete(cmd.No, cmd.Args[0], pos)
+			s.Project.Complete(cmd.No, s.expand(cmd.Args[0]), pos)
 		}
 	}
 	case "tooltip-info": if chk(1) {
