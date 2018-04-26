@@ -11,6 +11,7 @@ import "go/scanner"
 //import "github.com/kouzdra/go-analyzer/writer"
 import "github.com/kouzdra/go-analyzer/results"
 import "github.com/kouzdra/go-analyzer/env"
+import "github.com/kouzdra/go-analyzer/names"
 
 const (
 	Operator  = "Operator"
@@ -236,7 +237,7 @@ func (a *Analyzer) DeclIdentExpr (e ast.Expr) {
 	switch e := e.(type) {
 	case *ast.Ident:
 		a.Hil(VarDef, e)
-		a.Declare (env.KVar, env.Put(e.Name), nil, a.ModeTab.Any, e)
+		a.Declare (env.KVar, names.Put(e.Name), nil, a.ModeTab.Any, e)
 	default:
 		a.Error(e.Pos(), e.End(), "ident node required")
 	}
@@ -424,7 +425,7 @@ func (a *Analyzer) TryExpr (e ast.Expr) (env.Mode, bool) {
 }
 
 func (a *Analyzer) IdentExpr (id *ast.Ident) env.Mode {
-    if d, any := a.CurrSearch.Find (env.Put(id.Name)); !any && d == nil {
+    if d, any := a.CurrSearch.Find (names.Put(id.Name)); !any && d == nil {
 	a.NewError(id.Pos(), id.End(), "`" + id.Name + "' undefined")
 	return a.ModeTab.Err
     } else if d == nil {
@@ -615,7 +616,7 @@ func (a *Analyzer) TryType (t ast.Expr) (env.Mode, bool) {
 }
 
 func (a *Analyzer) IdentType (id *ast.Ident) env.Mode {
-    if d, any := a.CurrSearch.Find (env.Put(id.Name)); !any && d == nil {
+    if d, any := a.CurrSearch.Find (names.Put(id.Name)); !any && d == nil {
 	a.Error(id.Pos(), id.End(), "type `" + id.Name + "' undefined")
 	return a.ModeTab.Err
     } else if d == nil {
@@ -708,7 +709,7 @@ func (a *Analyzer) MapType (t *ast.MapType) env.Mode {
 
 //===================================================================
 
-func (a *Analyzer) Declare (k env.Kind, n *env.Name, t ast.Expr, m env.Mode, v ast.Node) {
+func (a *Analyzer) Declare (k env.Kind, n *names.Name, t ast.Expr, m env.Mode, v ast.Node) {
 	m = a.ModeTab.Find (m);
 	if n.Gbl () {
 		a.CurrGbl.Declare(k, n, t, m, v)
@@ -733,7 +734,7 @@ func (a *Analyzer) FuncDecl (d *ast.FuncDecl) {
 	//a.FuncType(d.Type)
 	//if d.Recv != nil { a.FieldList(d.Recv) }
 	a.Hil(FunDef, d.Name)
-	a.Declare(env.KFunc, env.Put (d.Name.Name), d.Type, a.ModeTab.Any, d)
+	a.Declare(env.KFunc, names.Put(d.Name.Name), d.Type, a.ModeTab.Any, d)
 }
 
 func (a *Analyzer) GenDecl (d *ast.GenDecl) {
@@ -761,7 +762,7 @@ func (a *Analyzer) GenDecl (d *ast.GenDecl) {
 func (a *Analyzer) Field (f *ast.Field) {
 	m := a.Type (f.Type)
 	for _, id := range f.Names {
-		a.CurrLcl.Declare(env.KVar, env.Put (id.Name), f.Type, m, nil)
+		a.CurrLcl.Declare(env.KVar, names.Put(id.Name), f.Type, m, nil)
 		//fmt.Println (id)
 		a.Hil (VarDef, id)
 	}
@@ -786,13 +787,13 @@ func (a *Analyzer) FieldList (fl *ast.FieldList) {
 func (a *Analyzer) ImportSpec (imp *ast.ImportSpec) {
 	if imp.Name != nil {
 		a.Hil (PkgDef, imp.Name)
-		a.Declare(env.KPackage, env.Put (imp.Name.Name), nil, a.ModeTab.Any, imp)
+		a.Declare(env.KPackage, names.Put(imp.Name.Name), nil, a.ModeTab.Any, imp)
 	} else {
 		p, err := strconv.Unquote(imp.Path.Value)
 		if err != nil {
 			a.Error(imp.Path.Pos(), imp.Path.End(), "invalid path syntax")
 		} else {
-			a.Declare(env.KPackage, env.Put (path.Base(p)), nil, a.ModeTab.Any, imp) // TODO: get file name
+			a.Declare(env.KPackage, names.Put (path.Base(p)), nil, a.ModeTab.Any, imp) // TODO: get file name
 		}
 	}
 	a.BasicLit(imp.Path)
@@ -803,9 +804,9 @@ func (a *Analyzer) ValueSpec (v *ast.ValueSpec) {
 	for i, id := range v.Names {
 		a.Hil (ValDef, id)
 		if v.Values == nil {
-			a.Declare(env.KConst, env.Put (id.Name), v.Type, a.ModeTab.Any, nil)
+			a.Declare(env.KConst, names.Put(id.Name), v.Type, a.ModeTab.Any, nil)
 		} else {
-			a.Declare(env.KConst, env.Put (id.Name), v.Type, a.ModeTab.Any, v.Values[i])
+			a.Declare(env.KConst, names.Put(id.Name), v.Type, a.ModeTab.Any, v.Values[i])
 		}
 	}
 	if v.Comment != nil { a.Hil (Comment, v.Comment) }
@@ -813,7 +814,7 @@ func (a *Analyzer) ValueSpec (v *ast.ValueSpec) {
 
 func (a *Analyzer) TypeSpec (t *ast.TypeSpec) {
 	a.Hil (TypDef, t.Name)
-	a.Declare(env.KType, env.Put (t.Name.Name), t.Type, a.ModeTab.Any, nil)
+	a.Declare(env.KType, names.Put(t.Name.Name), t.Type, a.ModeTab.Any, nil)
 
 	if t.Comment != nil { a.Hil (Comment, t.Comment) }
 }
@@ -827,7 +828,7 @@ func (a *Analyzer) AnalyzeFileIntr (f *ast.File) {
 	a.CurrSearch = a.CurrLcl
 	a.HilAt (Keyword, f.Package, 7)
 	a.Hil   (PkgDef , f.Name)
-	a.Declare (env.KPackage, env.Put(f.Name.Name), nil, a.ModeTab.Any, nil)
+	a.Declare (env.KPackage, names.Put(f.Name.Name), nil, a.ModeTab.Any, nil)
 	if f.Doc != nil { a.Hil (Comment, f.Doc) }
  	for _, c    := range f.Comments   { a.Hil   (Comment, c) }
 	for _, decl := range f.Decls      { a.Decl (decl) }

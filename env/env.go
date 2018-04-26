@@ -2,6 +2,9 @@ package env
 
 //import "fmt"
 import "go/ast"
+import "github.com/kouzdra/go-analyzer/names"
+//import "github.com/kouzdra/go-analyzer/paths"
+
 
 type Kind int
 
@@ -15,7 +18,7 @@ const (
 
 type Decl struct {
         Kind  Kind
-        Name *Name
+        Name *names.Name
         Type ast.Expr
         Mode  Mode
         Value ast.Node
@@ -100,8 +103,8 @@ func (e *EnvBldr) Close () *Env {
 
 func NewBldr () *EnvBldr { return &EnvBldr{Subs{make([]*Env, 0, 40), false}, nil} }
 
-func (e *EnvBldr) Declare (k Kind, n *Name, t ast.Expr, m Mode, v ast.Node) *Decl {
-        if n == Dummy {
+func (e *EnvBldr) Declare (k Kind, n *names.Name, t ast.Expr, m Mode, v ast.Node) *Decl {
+        if n == names.Dummy {
                 return nil
         }
         if m == nil { panic ("nil mode decl") }
@@ -119,7 +122,7 @@ func (e *EnvBldr) With (fn func ()) {
         e.Reset(mark)
 }
 
-func (e *Subs) Find (n *Name) (*Decl, bool) {
+func (e *Subs) Find (n *names.Name) (*Decl, bool) {
         //fmt.Printf("Sub.Find: %s %b\n", n.Name, e.Any)
         for _, s := range e.Sub {
                 if d, any := s.Find(n); any || d != nil { return d, any }
@@ -127,7 +130,7 @@ func (e *Subs) Find (n *Name) (*Decl, bool) {
         return nil, e.Any
 }
 
-func (e *Env) Find (n *Name) (*Decl, bool) {
+func (e *Env) Find (n *names.Name) (*Decl, bool) {
         //fmt.Printf("%#v name=%d\n", e.Decls, n.Hash)
         h := n.Hash % uint (len(e.Decls))
         for d := e.Decls[h]; d != nil; d = d.Next {
@@ -136,7 +139,7 @@ func (e *Env) Find (n *Name) (*Decl, bool) {
         return e.Subs.Find(n)
 }
 
-func (e *EnvBldr) Find (n *Name) (*Decl, bool) {
+func (e *EnvBldr) Find (n *names.Name) (*Decl, bool) {
         //fmt.Printf("+  name=%s\n", n.Name)
         for d := e.Decls; d != nil; d = d.Next {
                 //fmt.Printf("- name=%s\n", d.Name.Name)
