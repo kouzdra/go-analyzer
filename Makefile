@@ -9,7 +9,7 @@ server: $(P)
 #EXPS = export GOPATH=$(HOME)/WORK/cf-c/go; export PATH=$(PATH):$(HOME)/go/bin; 
 
 run: $(P)
-	./$< <test.cmds
+	./$< <../go-tests/test.cmds
 #	./$< <in.in
 
 clean:

@@ -3,23 +3,25 @@ package names
 //import "fmt"
 
 const (
-        HashSize = 64
+        hashSize = 64*1024
 )
 
-var Dummy = Put("_")
-var Null  = Put("<NONE>")
-
+type NameNo uint
 type Name struct {
         Name string
+	No   NameNo
         Hash uint
         Next * Name
 }
+
+var cnt uint = 0
 
 func (n *Name) Gbl () bool {
     return len(n.Name) != 0 && 'A' <= n.Name[0] && n.Name[0] <= 'Z'
 }
 
-var Names [1024*128]*Name
+var namesTab [hashSize]*Name
+var names = make ([]Name, 0, 1024)
 
 func Hash(name string) uint {
         res := uint (0)
@@ -32,7 +34,7 @@ func Find (name string) *Name {
 }
 
 func FindHash (name string, hash uint) *Name {
-        for cell := Names[hash%uint (len (Names))]; cell != nil; cell = cell.Next {
+        for cell := namesTab[hash%uint (hashSize)]; cell != nil; cell = cell.Next {
                 if (cell.Name == name) {
                         return cell
                 }
@@ -45,10 +47,13 @@ func Put(name string) *Name {
         hash := Hash(name)
         cell := FindHash(name, hash)
         if cell == nil {
-		hh := hash%uint (len(Names))
-                cell = &Name {name, hash, Names[hh]}
+		hh := hash%uint (hashSize)
+		cnt ++
+                newCell := Name {name, NameNo (cnt), hash, namesTab[hh]}
+		names = append (names, newCell)
                 //fmt.Printf("New: %s\n", name)
-                Names[hh] = cell
+		cell = &newCell
+                namesTab[hh] = cell
         }
         return cell
 }

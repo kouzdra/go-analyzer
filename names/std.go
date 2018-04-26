@@ -1,5 +1,8 @@
 package names
 
+var Dummy = Put("_")
+var Null  = Put("<NONE>")
+
 var N_main = Put("main")
 
 var N_int    = Put("int"   )
