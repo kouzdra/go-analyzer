@@ -9,7 +9,7 @@ import "github.com/kouzdra/go-analyzer/server"
 import "github.com/kouzdra/go-analyzer/names"
 //import "flag"
 
-var f_main = names.Put("main")
+var f_main = names.N_main
 
 func main() {
 	/*f, err := os.Create("go.prof")
