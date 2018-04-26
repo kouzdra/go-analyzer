@@ -18,4 +18,14 @@ var cnt = 0
 
 var pathTab [pathSize]pathElem
 
-func Put (
+func Make (base *Path, name *names.Name) *Path {
+	return nil // TODO
+}
+
+func Put (names ...*names.Name) *Path {
+	var path *Path = nil
+	for _, name := range names {
+		path = Make(path, name)
+	}
+	return path
+}

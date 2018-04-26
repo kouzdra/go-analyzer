@@ -10,6 +10,7 @@ import "go/build"
 import "go/token"
 import "go/ast"
 import "github.com/kouzdra/go-analyzer/env"
+import "github.com/kouzdra/go-analyzer/names"
 import "github.com/kouzdra/go-analyzer/analyzer"
 import "github.com/kouzdra/go-analyzer/results"
 //import "github.com/kouzdra/go-analyzer/options"
@@ -40,6 +41,14 @@ func (p *Project) SetRoot (path string) {
 func (p *Project) SetPath (path string) {
 	p.MsgF ("PATH=%s", path)
 	p.Context.GOPATH = path
+}
+
+func (p *Project) N_GOROOT () *names.Name {
+	return names.Put(p.Context.GOROOT)
+}
+
+func (p *Project) N_GOPATH () *names.Name {
+	return names.Put(p.Context.GOPATH)
 }
 
 func (s *Project) Msg (msg string) {

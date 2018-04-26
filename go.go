@@ -7,6 +7,7 @@ import "github.com/kouzdra/go-analyzer/server"
 //import "runtime/pprof"
 //import "github.com/kouzdra/go-analyzer/env"
 import "github.com/kouzdra/go-analyzer/names"
+import _ "github.com/kouzdra/go-analyzer/paths"
 //import "flag"
 
 var f_main = names.N_main
