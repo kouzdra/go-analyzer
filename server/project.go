@@ -3,15 +3,15 @@ package server
 import "strings"
 import "github.com/kouzdra/go-analyzer/results"
 import "github.com/kouzdra/go-analyzer/options"
-import "github.com/kouzdra/go-analyzer/project"
+import "github.com/kouzdra/go-analyzer/gproject"
 
 type Project struct {
 	*Server
-	Project *project.Project
+	Project *gproject.Project
 }
 
 func NewProject(server *Server) *Project {
-	return &Project{server, project.NewProject ()}
+	return &Project{server, gproject.NewProject ()}
 }
 
 //-------------------------------------------------------------------

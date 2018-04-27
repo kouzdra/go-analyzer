@@ -1,4 +1,4 @@
-package project
+package gproject
 
 import "fmt"
 import "log"

@@ -1,4 +1,4 @@
-package project
+package gproject
 
 import "go/build"
 //import "fmt"
