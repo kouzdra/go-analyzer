@@ -9,16 +9,16 @@ type Path struct {
 	Name *names.Name
 }
 
-const pathSize = 1024
+const hashSize = 1024
 
 type pathElem struct {
 	Path
 	next *pathElem
 }
 
-var cnt = 0
+var cnt uint = 0
 
-var pathTab [pathSize]pathElem
+var pathTab [hashSize]*pathElem
 
 func (base *Path) hashName (name *names.Name) uint {
 	return base.hash () + name.Hash
@@ -33,8 +33,24 @@ func (base *Path) hash () uint {
 		
 }
 
+func (base *Path) Find (name *names.Name) *Path {
+	hash := base.hashName(name)
+	for elem := pathTab[hash % hashSize]; elem != nil; elem = elem.next {
+		if elem.Base == base && elem.Name == name {
+			return &elem.Path
+		}
+	}
+	return nil
+}
+
 func (base *Path) Make (name *names.Name) *Path {
-	return nil // TODO
+	if path := base.Find(name); path != nil {
+		return path
+	}
+	hash := base.hashName(name)
+	elem := pathElem{Path{cnt, hash, base, name}, pathTab[hash % hashSize]}
+	cnt ++
+	return &elem.Path
 }
 
 func Put (names ...*names.Name) *Path {
