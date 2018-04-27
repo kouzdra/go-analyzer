@@ -12,6 +12,7 @@ import "go/scanner"
 import "github.com/kouzdra/go-analyzer/results"
 import "github.com/kouzdra/go-analyzer/env"
 import "github.com/kouzdra/go-analyzer/names"
+import "github.com/kouzdra/go-analyzer/paths"
 
 const (
 	Operator  = "Operator"
@@ -64,6 +65,7 @@ const (
 )
 
 type Ker struct {
+	Path *paths.Path // TODO
 	Gbl *env.Env
 	Lcl *env.Env
 	errs []results.Error
@@ -76,7 +78,7 @@ type Analyzer struct {
 	FSet *token.FileSet
 	file *token.File
 	flags uint
-	CurrGbl, CurrLcl, CurrSearch * env.EnvBldr
+	CurrGbl, CurrLcl, CurrSearch *env.EnvBldr
 	CollectHils bool
 	CollectErrs bool
 	NodeClass NClass
@@ -712,9 +714,9 @@ func (a *Analyzer) MapType (t *ast.MapType) env.Mode {
 func (a *Analyzer) Declare (k env.Kind, n *names.Name, t ast.Expr, m env.Mode, v ast.Node) {
 	m = a.ModeTab.Find (m);
 	if n.Gbl () {
-		a.CurrGbl.Declare(k, n, t, m, v)
+		a.CurrGbl.Declare(k, n, a.Path, t, m, v)
 	} else {
-		a.CurrLcl.Declare(k, n, t, m, v)
+		a.CurrLcl.Declare(k, n, a.Path, t, m, v)
 	}
 }
 
@@ -762,7 +764,7 @@ func (a *Analyzer) GenDecl (d *ast.GenDecl) {
 func (a *Analyzer) Field (f *ast.Field) {
 	m := a.Type (f.Type)
 	for _, id := range f.Names {
-		a.CurrLcl.Declare(env.KVar, names.Put(id.Name), f.Type, m, nil)
+		a.CurrLcl.Declare(env.KVar, names.Put(id.Name), a.Path, f.Type, m, nil)
 		//fmt.Println (id)
 		a.Hil (VarDef, id)
 	}

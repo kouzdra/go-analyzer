@@ -3,7 +3,7 @@ package env
 //import "fmt"
 import "go/ast"
 import "github.com/kouzdra/go-analyzer/names"
-//import "github.com/kouzdra/go-analyzer/paths"
+import "github.com/kouzdra/go-analyzer/paths"
 
 
 type Kind int
@@ -19,6 +19,7 @@ const (
 type Decl struct {
         Kind  Kind
         Name *names.Name
+	Path *paths.Path
         Type ast.Expr
         Mode  Mode
         Value ast.Node
@@ -96,19 +97,19 @@ func (e *EnvBldr) Close () *Env {
         res := &Env{e.Subs, make ([]*DeclList, hsize, hsize)}
         for d := e.Decls; d != nil; d = d.Next {
                 h := d.Name.Hash % hsize
-                res.Decls [h] = &DeclList{Decl{d.Kind, d.Name, d.Type, d.Mode, d.Value}, res.Decls[h]}
+                res.Decls [h] = &DeclList{Decl{d.Kind, d.Name, d.Path, d.Type, d.Mode, d.Value}, res.Decls[h]}
         }
         return res
 }
 
 func NewBldr () *EnvBldr { return &EnvBldr{Subs{make([]*Env, 0, 40), false}, nil} }
 
-func (e *EnvBldr) Declare (k Kind, n *names.Name, t ast.Expr, m Mode, v ast.Node) *Decl {
+func (e *EnvBldr) Declare (k Kind, n *names.Name, p *paths.Path, t ast.Expr, m Mode, v ast.Node) *Decl {
         if n == names.Dummy {
                 return nil
         }
         if m == nil { panic ("nil mode decl") }
-        e.Decls = &DeclList{Decl{k, n, t, m, v}, e.Decls}
+        e.Decls = &DeclList{Decl{k, n, p, t, m, v}, e.Decls}
         return &e.Decls.Decl
 }
 

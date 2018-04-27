@@ -1,5 +1,7 @@
 package names
 
+var Root = Put("::")
+
 var Dummy = Put("_")
 var Null  = Put("<NONE>")
 

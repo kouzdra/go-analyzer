@@ -20,6 +20,8 @@ var cnt uint = 0
 
 var pathTab [hashSize]*pathElem
 
+var Root = Put(names.Root)
+
 func (path *Path) Repr() string {
 	if path == nil {
 		panic("paths.Repr: nil path")
