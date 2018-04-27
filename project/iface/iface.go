@@ -4,8 +4,8 @@ import "github.com/kouzdra/go-analyzer/names"
 //import "github.com/kouzdra/go-analyzer/paths"
 
 type Program interface {
-	Name() *names.Name
-	Options() Options
+	GetName() *names.Name
+	GetOptions() Options
 	//Packages() []Package
 
 	//Update()
@@ -16,14 +16,13 @@ type Program interface {
 }
 
 type Package interface {
-	Name() *names.Name
-	Path() *names.Name
-	Program() Program
-	Sources() []Source
+	GetPath() *names.Name
+	GetProgram() Program
+	//GetSources() []Source
 	GetSource(name *names.Name) Source // nil - no source
 }
 
 type Source interface {
-	Name() *names.Name
-	Package() Package
+	GetName() *names.Name
+	GetPackage() Package
 }
