@@ -11,7 +11,7 @@ type Name struct {
         Name string
 	No   NameNo
         Hash uint
-        Next * Name
+        Next *Name
 }
 
 var cnt uint = 0
@@ -23,14 +23,18 @@ func (n *Name) Gbl () bool {
 var namesTab [hashSize]*Name
 var names = make ([]Name, 0, 1024)
 
-func Hash(name string) uint {
+func (n *Name) Repr () string {
+	return n.Name
+}
+
+func hash(name string) uint {
         res := uint (0)
         for i := 0; i != len(name); i++ { res = uint (res << 1) + uint(name[i]) }
         return res;
 }
 
 func Find (name string) *Name {
-        return FindHash(name, Hash(name))
+        return FindHash(name, hash(name))
 }
 
 func FindHash (name string, hash uint) *Name {
@@ -44,7 +48,7 @@ func FindHash (name string, hash uint) *Name {
 
 func Put(name string) *Name {
         //fmt.Printf("Req: %s\n", name)
-        hash := Hash(name)
+        hash := hash(name)
         cell := FindHash(name, hash)
         if cell == nil {
 		hh := hash%uint (hashSize)
