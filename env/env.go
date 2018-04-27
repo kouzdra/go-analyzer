@@ -109,7 +109,7 @@ func (e *EnvBldr) Declare (k Kind, n *names.Name, p *paths.Path, t ast.Expr, m M
                 return nil
         }
         if m == nil { panic ("nil mode decl") }
-        e.Decls = &DeclList{Decl{k, n, p, t, m, v}, e.Decls}
+        e.Decls = &DeclList{Decl{k, n, p.Make(n), t, m, v}, e.Decls}
         return &e.Decls.Decl
 }
 
