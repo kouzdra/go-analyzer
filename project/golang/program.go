@@ -4,16 +4,16 @@ import "github.com/kouzdra/go-analyzer/names"
 import "github.com/kouzdra/go-analyzer/project/iface"
 
 type Program struct {
-	Options OptionsBase
+	Project *Project
 	Name *names.Name
 	Package *Package
 }
 
-func (p *Program) GetOptions() iface.Options { // nil - no package
-	return &p.Options
+func (p *Program) GetProject() iface.Project { 
+	return p.Project
 }
 
-func (p *Program) GetName() *names.Name { // nil - no package
+func (p *Program) GetName() *names.Name { 
 	return p.Name
 }
 
