@@ -82,7 +82,7 @@ func (p *Project) GetPkg (bpkg *build.Package) *Pkg {
 	if pkg == nil {
 		pkg = NewPkg (p, bpkg)
 		for _, f := range bpkg.GoFiles {
-			pkg.Srcs [f] = SrcNew(pkg, bpkg.Dir, f)
+			pkg.Srcs [f] = SrcNew(pkg, names.Put (bpkg.Dir), names.Put (f))
 		}
 		p.Pkgs [name] = pkg
 	}
@@ -193,11 +193,11 @@ func (p *Project) Analyze (src *Src, no int) (*results.Errors, *results.Fontify)
 	//src.UpdateAst()
 	
 	if false {
-		fmt.Printf ("imports of package [%s]\n", src.Pkg.Name);
+		fmt.Printf ("imports of package [%s]\n", src.Pkg.GetName ().Name);
 		for _, name := range  src.Pkg.Pkg.Imports {
 			fmt.Printf ("  Import [%s]\n", name);
 		}
-		fmt.Printf ("Files of package [%s]\n", src.Pkg.Name);
+		fmt.Printf ("Files of package [%s]\n", src.Pkg.GetName ().Name);
 		for _, name := range  src.Pkg.Pkg.GoFiles {
 			fmt.Printf ("  File [%s]\n", name);
 		}

@@ -14,7 +14,7 @@ import "github.com/kouzdra/go-analyzer/names"
 
 type Src struct {
 	Pkg *Pkg
-	Dir  string
+	dir  *names.Name
 	name *names.Name
 	actual bool
 	text string
@@ -26,16 +26,17 @@ type Src struct {
 
 //-------------------------------------------------------
 
+func (s *Src) GetDir  () *names.Name { return s.dir ; }
 func (s *Src) GetName () *names.Name { return s.name; }
 
 //-------------------------------------------------------
 
-func SrcNew (pkg *Pkg, dir string, name string) *Src {
-	return &Src{pkg, dir, names.Put (name), false, "", nil, nil, nil, nil}
+func SrcNew (pkg *Pkg, dir *names.Name, name *names.Name) *Src {
+	return &Src{pkg, dir, name, false, "", nil, nil, nil, nil}
 }
 
 func (src *Src) FName () string {
-	return filepath.Join(src.Dir, src.GetName().Name)
+	return filepath.Join(src.GetDir().Name, src.GetName().Name)
 }
 
 func readFile (fname string) string {
