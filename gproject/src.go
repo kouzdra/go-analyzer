@@ -9,11 +9,13 @@ import "go/scanner"
 import "go/parser"
 import "go/token"
 import "go/ast"
+import "github.com/kouzdra/go-analyzer/names"
+//import "github.com/kouzdra/go-analyzer/paths"
 
 type Src struct {
 	Pkg *Pkg
 	Dir  string
-	Name string
+	Name *names.Name
 	actual bool
 	text string
 	File *token.File
@@ -22,12 +24,16 @@ type Src struct {
 	InnerErrors []results.Error
 }
 
+//-------------------------------------------------------
+
+//-------------------------------------------------------
+
 func SrcNew (pkg *Pkg, dir string, name string) *Src {
-	return &Src{pkg, dir, name, false, "", nil, nil, nil, nil}
+	return &Src{pkg, dir, names.Put (name), false, "", nil, nil, nil, nil}
 }
 
 func (src *Src) FName () string {
-	return filepath.Join(src.Dir, src.Name)
+	return filepath.Join(src.Dir, src.Name.Name)
 }
 
 func readFile (fname string) string {
