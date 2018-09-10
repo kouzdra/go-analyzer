@@ -15,7 +15,7 @@ import "github.com/kouzdra/go-analyzer/names"
 type Src struct {
 	Pkg *Pkg
 	Dir  string
-	Name *names.Name
+	name *names.Name
 	actual bool
 	text string
 	File *token.File
@@ -26,6 +26,8 @@ type Src struct {
 
 //-------------------------------------------------------
 
+func (s *Src) GetName () *names.Name { return s.name; }
+
 //-------------------------------------------------------
 
 func SrcNew (pkg *Pkg, dir string, name string) *Src {
@@ -33,7 +35,7 @@ func SrcNew (pkg *Pkg, dir string, name string) *Src {
 }
 
 func (src *Src) FName () string {
-	return filepath.Join(src.Dir, src.Name.Name)
+	return filepath.Join(src.Dir, src.GetName().Name)
 }
 
 func readFile (fname string) string {
@@ -98,10 +100,10 @@ func (src *Src) ReParse () (*token.File, *ast.File, scanner.ErrorList) {
 	case scanner.ErrorList: elist = err
 	}
 	if err != nil && elist == nil || ast == nil {
-		src.Pkg.Prj.MsgF("PARSE %s Failed: %v", src.Name, err)
+		src.Pkg.Prj.MsgF("PARSE %s Failed: %v", src.GetName().Name, err)
 		return nil, nil, nil
 	}
-	src.Pkg.Prj.MsgF("PARSE %s OK", src.Name)
+	src.Pkg.Prj.MsgF("PARSE %s OK", src.GetName().Name)
 	return file, ast, elist
 }
 

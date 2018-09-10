@@ -49,7 +49,7 @@ func (p *Project) FindFiles (no int, pfx string, system bool, max int) {
 	files := results.Files{system, make([]string, 0, 1000)}
 	for _, pkg := range p.Project.Pkgs {
 		for _, f := range pkg.Srcs {
-			if strings.HasPrefix(f.Name.Name, pfx) {
+			if strings.HasPrefix(f.GetName().Name, pfx) {
 				files.Files = append (files.Files, f.FName())
 			}
 		}
