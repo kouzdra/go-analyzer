@@ -82,7 +82,7 @@ func (p *Project) GetPkg (bpkg *build.Package) *Pkg {
 	if pkg == nil {
 		pkg = NewPkg (p, bpkg)
 		for _, f := range bpkg.GoFiles {
-			pkg.Srcs [f] = SrcNew(pkg, names.Put (bpkg.Dir), names.Put (f))
+			pkg.GetSrcs () [names.Put (f)] = SrcNew(pkg, names.Put (bpkg.Dir), names.Put (f))
 		}
 		p.Pkgs [name] = pkg
 	}
@@ -130,7 +130,7 @@ func (p *Project) GetSrc (fname string) (*Src, error) {
 	dir, name := filepath.Split (fname)
 	dir = path.Clean(dir)
 	if pkg := p.Pkgs [dir]; pkg != nil {
-		if src := pkg.Srcs[name]; src != nil {
+		if src := pkg.GetSrcs () [names.Put (name)]; src != nil {
 			return src, nil
 		} else {
 			return nil, fmt.Errorf("Src [%s] not found in %s\n", name, dir)
@@ -220,7 +220,7 @@ func (p *Project) Analyze (src *Src, no int) (*results.Errors, *results.Fontify)
 func (p *Project) FindFiles (no int, pfx string, system bool, max int) *results.Files {
 	files := results.Files{system, make([]string, 0, 1000)}
 	for _, pkg := range p.Pkgs {
-		for _, f := range pkg.Srcs {
+		for _, f := range pkg.GetSrcs () {
 			if strings.HasPrefix(f.GetName ().Name, pfx) {
 				files.Files = append (files.Files, f.FName())
 			}
