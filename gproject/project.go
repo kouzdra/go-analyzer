@@ -11,13 +11,14 @@ import "go/token"
 import "go/ast"
 import "github.com/kouzdra/go-analyzer/env"
 import "github.com/kouzdra/go-analyzer/names"
+//import "github.com/kouzdra/go-analyzer/paths"
 import "github.com/kouzdra/go-analyzer/analyzer"
 import "github.com/kouzdra/go-analyzer/results"
 //import "github.com/kouzdra/go-analyzer/options"
 
 type Project struct {
 	Context build.Context
-	Dirs [] string
+	dirs [] *names.Name
 	Tree [] Dir
 	Pkgs map [string]*Pkg
 	FSet *token.FileSet
@@ -32,6 +33,12 @@ type Dir struct {
 func NewProject() *Project {
 	return &Project{Context:build.Default, FSet:token.NewFileSet(), ModeTab:env.NewModeTab ()}
 }
+
+//---------------------------------------------------
+
+func (pr *Project) GetDirs () []*names.Name { return pr.dirs; }
+
+//---------------------------------------------------
 
 func (p *Project) SetRoot (path string) {
 	p.MsgF ("ROOT=%s", path)
@@ -63,49 +70,51 @@ func (s *Project) MsgF (f string, args... interface{}) {
 
 //-------------------------------------------------------------------
 
-func (p *Project) GetSubDirs (dest [] string, rootPath string, rootName string, tree [] Dir) ([] string, [] Dir) {
+func (p *Project) MakeSubDirs (dest []*names.Name, rootPath *names.Name, rootName *names.Name, tree [] Dir) ([]*names.Name, [] Dir) {
 	dest = append (dest, rootPath)
 	//fmt.Printf ("File: [%s]\n", root)
-	files, _ := ioutil.ReadDir (rootPath)
+	files, _ := ioutil.ReadDir (rootPath.Name)
 	subTree := make ([]Dir, 0)
 	for _, file := range files {
 		if file.IsDir () {
-			dest, subTree = p.GetSubDirs (dest, filepath.Join (rootPath, file.Name()), file.Name(), subTree)
+			dest, subTree = p.MakeSubDirs (dest, names.Put (filepath.Join (rootPath.Name, file.Name())), names.Put (file.Name()), subTree)
 		}
 	}
-	return dest, append (tree, Dir{rootPath, subTree})
+	return dest, append (tree, Dir{rootPath.Name, subTree})
 }
 
-func (p *Project) GetPkg (bpkg *build.Package) *Pkg {
+func (p *Project) MakePackage (bpkg *build.Package) *Pkg {
 	name := bpkg.Dir
 	pkg := p.Pkgs [name]
 	if pkg == nil {
 		pkg = NewPkg (p, bpkg)
 		for _, f := range bpkg.GoFiles {
-			pkg.GetSrcs () [names.Put (f)] = SrcNew(pkg, names.Put (bpkg.Dir), names.Put (f))
+			ff := names.Put (f)
+			pkg.GetSrcs () [ff] = SrcNew(pkg, names.Put (bpkg.Dir), ff)
 		}
 		p.Pkgs [name] = pkg
 	}
 	return pkg
 }
 
-func  (p *Project) GetDirs () {
-	dirs := make ([]string, 0, 100)
+func  (p *Project) MakeDirs () {
+	dirs := make ([]*names.Name, 0, 100)
 	tree := make ([]Dir, 0)
 	for _, dir := range p.Context.SrcDirs () {
 		//p.Server.Writer.Log(dir)
-		dirs, tree = p.GetSubDirs(dirs, dir, dir, tree)
+		dirN := names.Put (dir)
+		dirs, tree = p.MakeSubDirs(dirs, dirN, dirN, tree)
 	}
-	p.Dirs = dirs
+	p.dirs = dirs
 	p.Tree = tree
 }
 
-func  (p *Project) GetPackages () {
+func  (p *Project) MakePackages () {
 	p.Pkgs = make (map[string]*Pkg)
-	for _, dir := range p.Dirs {
-		pkg, err := p.Context.ImportDir (dir, 0)
+	for _, dir := range p.GetDirs() {
+		pkg, err := p.Context.ImportDir (dir.Name, 0)
 		if err == nil {
-			p.GetPkg (pkg)
+			p.MakePackage (pkg)
 		}
 	}
 }
@@ -113,8 +122,8 @@ func  (p *Project) GetPackages () {
 //-------------------------------------------------------------------
 
 func (p *Project) Load () {
-	p.GetDirs ()
-	p.GetPackages()
+	p.MakeDirs ()
+	p.MakePackages()
 	/*for _, pkg := range p.Pkgs {
 		for n, f := range pkg.Srcs {
 			/.MsgF ("Src [%s]: Dir=%s", n, f.Dir)

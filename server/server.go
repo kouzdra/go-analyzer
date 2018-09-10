@@ -59,7 +59,7 @@ func (s *Server) Process (cmd commands.Cmd) {
 	case "go-root": if chk(1) { s.Project.Project.SetRoot (cmd.Args [0]) }
 	case "load-project": {
 		s.Project.Project.Load ()
-		s.Msg(fmt.Sprintf ("%d dirs found", len (s.Project.Project.Dirs)))
+		s.Msg(fmt.Sprintf ("%d dirs found", len (s.Project.Project.GetDirs())))
 		//s.Msg(fmt.Sprintf ("%d pkgs found", len (s.Project.Pkgs)))
 	}
 	case "reload": if chk (1) {
