@@ -20,13 +20,13 @@ type Project struct {
 	Context build.Context
 	dirs [] *names.Name
 	Tree [] Dir
-	Pkgs map [string]*Pkg
+	packages map [*names.Name]*Pkg
 	FSet *token.FileSet
 	ModeTab *env.ModeTab
 }
 
 type Dir struct {
-	Path string
+	path *names.Name
 	Sub [] Dir
 }
 
@@ -36,7 +36,10 @@ func NewProject() *Project {
 
 //---------------------------------------------------
 
-func (pr *Project) GetDirs () []*names.Name { return pr.dirs; }
+func (pr *Project) GetDirs     () []*names.Name { return pr.dirs; }
+func (pr *Project) GetPackages () map [*names.Name]*Pkg { return pr.packages; }
+
+func (dir *Dir) GetPath () *names.Name { return dir.path }
 
 //---------------------------------------------------
 
@@ -80,19 +83,19 @@ func (p *Project) MakeSubDirs (dest []*names.Name, rootPath *names.Name, rootNam
 			dest, subTree = p.MakeSubDirs (dest, names.Put (filepath.Join (rootPath.Name, file.Name())), names.Put (file.Name()), subTree)
 		}
 	}
-	return dest, append (tree, Dir{rootPath.Name, subTree})
+	return dest, append (tree, Dir{rootPath, subTree})
 }
 
 func (p *Project) MakePackage (bpkg *build.Package) *Pkg {
-	name := bpkg.Dir
-	pkg := p.Pkgs [name]
+	name := names.Put (bpkg.Dir)
+	pkg := p.GetPackages() [name]
 	if pkg == nil {
 		pkg = NewPkg (p, bpkg)
 		for _, f := range bpkg.GoFiles {
 			ff := names.Put (f)
-			pkg.GetSrcs () [ff] = SrcNew(pkg, names.Put (bpkg.Dir), ff)
+			pkg.GetSrcs () [ff] = SrcNew(pkg, name, ff)
 		}
-		p.Pkgs [name] = pkg
+		p.GetPackages () [name] = pkg
 	}
 	return pkg
 }
@@ -110,7 +113,7 @@ func  (p *Project) MakeDirs () {
 }
 
 func  (p *Project) MakePackages () {
-	p.Pkgs = make (map[string]*Pkg)
+	p.packages = make (map[*names.Name]*Pkg)
 	for _, dir := range p.GetDirs() {
 		pkg, err := p.Context.ImportDir (dir.Name, 0)
 		if err == nil {
@@ -138,7 +141,7 @@ func (p *Project) Load () {
 func (p *Project) GetSrc (fname string) (*Src, error) {
 	dir, name := filepath.Split (fname)
 	dir = path.Clean(dir)
-	if pkg := p.Pkgs [dir]; pkg != nil {
+	if pkg := p.GetPackages() [names.Put (dir)]; pkg != nil {
 		if src := pkg.GetSrcs () [names.Put (name)]; src != nil {
 			return src, nil
 		} else {
@@ -228,7 +231,7 @@ func (p *Project) Analyze (src *Src, no int) (*results.Errors, *results.Fontify)
 
 func (p *Project) FindFiles (no int, pfx string, system bool, max int) *results.Files {
 	files := results.Files{system, make([]string, 0, 1000)}
-	for _, pkg := range p.Pkgs {
+	for _, pkg := range p.GetPackages () {
 		for _, f := range pkg.GetSrcs () {
 			if strings.HasPrefix(f.GetName ().Name, pfx) {
 				files.Files = append (files.Files, f.FName())
