@@ -192,37 +192,38 @@ func (p *CompleteProc) Before (n ast.Node) bool {
 func (p *Project) Complete (src *Src, pos int) *results.Completion {
 	src.UpdateAst()
 	a := analyzer.New(analyzer.NewKer (p.ModeTab), p.FSet, false)
-	completeProcessor := CompleteProc{nil, analyzer.Processor{a}, token.Pos(src.File.Base () + pos)}
+	completeProcessor := CompleteProc{nil, analyzer.Processor{a}, token.Pos(src.GetFile().Base () + pos)}
 	a.NodeProc = &completeProcessor
-	a.Analyze(src.File, src.Ast)
+	a.Analyze(src.GetFile(), src.GetAst())
 	return completeProcessor.Results
 }
 
 //-------------------------------------------------------------------
 
 func (p *Project) Analyze (src *Src, no int) (*results.Errors, *results.Fontify) {
-	src.Pkg.UpdateAsts ()
+	pkg := src.GetPackage()
+	pkg.UpdateAsts ()
 	//src.UpdateAst()
 	
 	if false {
-		fmt.Printf ("imports of package [%s]\n", src.Pkg.GetName ().Name);
-		for _, name := range  src.Pkg.Pkg.Imports {
+		fmt.Printf ("imports of package [%s]\n", pkg.GetName ().Name);
+		for _, name := range  pkg.Pkg.Imports {
 			fmt.Printf ("  Import [%s]\n", name);
 		}
-		fmt.Printf ("Files of package [%s]\n", src.Pkg.GetName ().Name);
-		for _, name := range  src.Pkg.Pkg.GoFiles {
+		fmt.Printf ("Files of package [%s]\n", pkg.GetName ().Name);
+		for _, name := range  pkg.Pkg.GoFiles {
 			fmt.Printf ("  File [%s]\n", name);
 		}
 	}
 	
 	ker := analyzer.NewKer (p.ModeTab)
 	a := analyzer.New(ker, p.FSet, true)
-	fName := src.File.Name()
+	fName := src.GetFile().Name()
 	//a.Analyze(src.Ast)
-	a.SetTokenFile (src.File)
-	a.SetOuterErrors (src.OuterErrors)
-	a.AnalyzeFileIntr(src.Ast)
-	a.AnalyzeFileBody(src.Ast)
+	a.SetTokenFile (src.GetFile())
+	a.SetOuterErrors (src.GetOuterErrors())
+	a.AnalyzeFileIntr(src.GetAst())
+	a.AnalyzeFileBody(src.GetAst())
 	//a.Curr.Print()
 	return a.GetErrors (fName, no), a.GetFonts (fName, fName, no)
 }

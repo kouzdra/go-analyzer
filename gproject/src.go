@@ -13,21 +13,27 @@ import "github.com/kouzdra/go-analyzer/names"
 //import "github.com/kouzdra/go-analyzer/paths"
 
 type Src struct {
-	Pkg *Pkg
+	pkg *Pkg
 	dir  *names.Name
 	name *names.Name
 	actual bool
 	text string
-	File *token.File
-	Ast  *ast.File
-	OuterErrors scanner.ErrorList
-	InnerErrors []results.Error
+	file *token.File
+	ast  *ast.File
+	outerErrors scanner.ErrorList
+	innerErrors []results.Error
 }
 
 //-------------------------------------------------------
 
-func (s *Src) GetDir  () *names.Name { return s.dir ; }
-func (s *Src) GetName () *names.Name { return s.name; }
+func (s *Src) GetPackage () *Pkg        { return s.pkg ; }
+func (s *Src) GetDir     () *names.Name { return s.dir ; }
+func (s *Src) GetName    () *names.Name { return s.name; }
+func (s *Src) GetAst     () *  ast.File { return s.ast ; }
+func (s *Src) GetFile    () *token.File { return s.file; }
+
+func (s *Src) GetOuterErrors () scanner.ErrorList { return s.outerErrors; }
+func (s *Src) GetInnerErrors () []results.Error   { return s.innerErrors; }
 
 //-------------------------------------------------------
 
@@ -71,10 +77,10 @@ func (src *Src) Text() string {
 func (src *Src) Reload () {
 	src.actual = false
 	src.text   = ""
-	src.Ast    = nil
-	src.File   = nil
-	src.OuterErrors = nil
-	src.Pkg.Reload ()
+	src.ast    = nil
+	src.file   = nil
+	src.outerErrors = nil
+	src.pkg.Reload ()
 }
 
 func (src *Src) SetText (text string) {
@@ -93,23 +99,23 @@ func (src *Src) Changed (pos int, end int, newText string) {
 
 func (src *Src) ReParse () (*token.File, *ast.File, scanner.ErrorList) {
 	//src.Changed(3, 4, "a")
-	base := token.Pos(src.Pkg.Prj.FSet.Base())
-	ast, err := parser.ParseFile (src.Pkg.Prj.FSet, src.FName(), src.Text(), parser.ParseComments)
-	file := src.Pkg.Prj.FSet.File(base)
+	base := token.Pos(src.GetPackage().Prj.FSet.Base())
+	ast, err := parser.ParseFile (src.GetPackage().Prj.FSet, src.FName(), src.Text(), parser.ParseComments)
+	file := src.GetPackage().Prj.FSet.File(base)
 	elist := scanner.ErrorList(nil)
 	switch err := err.(type) {
 	case scanner.ErrorList: elist = err
 	}
 	if err != nil && elist == nil || ast == nil {
-		src.Pkg.Prj.MsgF("PARSE %s Failed: %v", src.GetName().Name, err)
+		src.GetPackage().Prj.MsgF("PARSE %s Failed: %v", src.GetName().Name, err)
 		return nil, nil, nil
 	}
-	src.Pkg.Prj.MsgF("PARSE %s OK", src.GetName().Name)
+	src.GetPackage().Prj.MsgF("PARSE %s OK", src.GetName().Name)
 	return file, ast, elist
 }
 
 func (src *Src) UpdateAst () {
-	if src.Ast == nil {
-		src.File, src.Ast, src.OuterErrors = src.ReParse ()
+	if src.ast == nil {
+		src.file, src.ast, src.outerErrors = src.ReParse ()
 	}
 }
