@@ -7,20 +7,25 @@ import "github.com/kouzdra/go-analyzer/names"
 import "github.com/kouzdra/go-analyzer/env"
 
 type  Pkg struct {
-	Prj  *Project
+	prj  *Project
 	dir  *names.Name
 	name *names.Name
-	Pkg  *build.Package
+	pkg  *build.Package
 	srcs map [*names.Name] *Src
-	EnvGbl *env.Env
-	EnvLcl *env.Env
+	envGbl *env.Env
+	envLcl *env.Env
 }
 
 //--------------------------------------------------
 
-func (p *Pkg) GetDir  () *names.Name { return p.dir ; }
-func (p *Pkg) GetName () *names.Name { return p.name; }
-func (p *Pkg) GetSrcs () map [*names.Name] *Src { return p.srcs; }
+func (p *Pkg) GetProject () *Project { return p.prj; }
+func (p *Pkg) GetDir     () *names.Name { return p.dir ; }
+func (p *Pkg) GetName    () *names.Name { return p.name; }
+func (p *Pkg) GetSrcs    () map [*names.Name] *Src { return p.srcs; }
+func (p *Pkg) GetPackage () *build.Package { return p.pkg ; }
+func (p *Pkg) GetEnvLcl  () *env.Env { return p.envLcl; }
+func (p *Pkg) GetEnvGbl  () *env.Env { return p.envGbl; }
+
 
 //--------------------------------------------------
 
@@ -29,13 +34,13 @@ func NewPkg (p *Project, bpkg *build.Package) *Pkg {
 }
 
 func (pkg *Pkg) Reload () {
-	pkg.EnvLcl = nil
-	pkg.EnvGbl = nil
+	pkg.envLcl = nil
+	pkg.envGbl = nil
 }
 
 
 func (pkg *Pkg) UpdateAsts () {
-	if pkg.EnvGbl == nil || pkg.EnvLcl == nil {
+	if pkg.GetEnvGbl() == nil || pkg.GetEnvLcl() == nil {
 		gbl := env.NewBldr ()
 		lcl := env.NewBldr ()
 		//lcl.Nested (gbl)
@@ -44,7 +49,7 @@ func (pkg *Pkg) UpdateAsts () {
                         //pkg.Prj.Server.MsgF ("+--Update File %s\n", src.Name)
                         src.UpdateAst ()
 		}
-		pkg.EnvGbl = gbl.Close ()
-		pkg.EnvLcl = lcl.Close ()
+		pkg.envGbl = gbl.Close ()
+		pkg.envLcl = lcl.Close ()
 	}
 }

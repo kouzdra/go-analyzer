@@ -207,11 +207,11 @@ func (p *Project) Analyze (src *Src, no int) (*results.Errors, *results.Fontify)
 	
 	if false {
 		fmt.Printf ("imports of package [%s]\n", pkg.GetName ().Name);
-		for _, name := range  pkg.Pkg.Imports {
+		for _, name := range  pkg.GetPackage ().Imports {
 			fmt.Printf ("  Import [%s]\n", name);
 		}
 		fmt.Printf ("Files of package [%s]\n", pkg.GetName ().Name);
-		for _, name := range  pkg.Pkg.GoFiles {
+		for _, name := range  pkg.GetPackage ().GoFiles {
 			fmt.Printf ("  File [%s]\n", name);
 		}
 	}

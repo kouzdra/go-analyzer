@@ -99,18 +99,19 @@ func (src *Src) Changed (pos int, end int, newText string) {
 
 func (src *Src) ReParse () (*token.File, *ast.File, scanner.ErrorList) {
 	//src.Changed(3, 4, "a")
-	base := token.Pos(src.GetPackage().Prj.FSet.Base())
-	ast, err := parser.ParseFile (src.GetPackage().Prj.FSet, src.FName(), src.Text(), parser.ParseComments)
-	file := src.GetPackage().Prj.FSet.File(base)
+	fset := src.GetPackage().GetProject ().FSet
+	base := token.Pos(fset.Base())
+	ast, err := parser.ParseFile (fset, src.FName(), src.Text(), parser.ParseComments)
+	file := fset.File(base)
 	elist := scanner.ErrorList(nil)
 	switch err := err.(type) {
 	case scanner.ErrorList: elist = err
 	}
 	if err != nil && elist == nil || ast == nil {
-		src.GetPackage().Prj.MsgF("PARSE %s Failed: %v", src.GetName().Name, err)
+		src.GetPackage().GetProject().MsgF("PARSE %s Failed: %v", src.GetName().Name, err)
 		return nil, nil, nil
 	}
-	src.GetPackage().Prj.MsgF("PARSE %s OK", src.GetName().Name)
+	src.GetPackage().GetProject().MsgF("PARSE %s OK", src.GetName().Name)
 	return file, ast, elist
 }
 
