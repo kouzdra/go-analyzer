@@ -2,6 +2,7 @@ package iface
 
 import "go/token"
 import "github.com/kouzdra/go-analyzer/names"
+import "github.com/kouzdra/go-analyzer/gproject"
 //import "github.com/kouzdra/go-analyzer/paths"
 
 
@@ -30,6 +31,7 @@ type Package interface {
 }
 
 type Source interface {
+	GetDir () *names.Name
 	GetName() *names.Name
-	GetPackage() Package
+	GetPackage() gproject.Pkg
 }

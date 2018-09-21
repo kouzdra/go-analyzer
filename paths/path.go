@@ -1,5 +1,6 @@
 package paths
 
+import "path/filepath"
 import "github.com/kouzdra/go-analyzer/names"
 
 type Path struct {
@@ -69,3 +70,12 @@ func Put(names ...*names.Name) *Path {
 	}
 	return path
 }
+
+func PutStr(path string) *Path {
+	var res *Path = nil
+	for _, name := range filepath.SplitList (path) {
+		res = res.Make (names.Put (name))
+	}
+	return res
+}
+
