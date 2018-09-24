@@ -66,7 +66,7 @@ func readFile (fname string) string {
 	}*/
 }
 
-func (src *Src) Text() string {
+func (src *Src) GetText() string {
 	if !src.actual {
 		src.text = readFile(src.FName ())
 		src.actual = true
@@ -90,9 +90,9 @@ func (src *Src) SetText (text string) {
 }
 
 func (src *Src) Changed (pos int, end int, newText string) {
-	old := src.Text()
+	old := src.GetText()
 	src.SetText (old[:pos] + newText + old[end:])
-	//src.Reload()
+	//src.Reload()U
 	//src.text = old[:pos] + newText + old[end:]
 	//src.actual = true
 }
@@ -101,7 +101,7 @@ func (src *Src) ReParse () (*token.File, *ast.File, scanner.ErrorList) {
 	//src.Changed(3, 4, "a")
 	fset := src.GetPackage().GetProject ().FSet
 	base := token.Pos(fset.Base())
-	ast, err := parser.ParseFile (fset, src.FName(), src.Text(), parser.ParseComments)
+	ast, err := parser.ParseFile (fset, src.FName(), src.GetText(), parser.ParseComments)
 	file := fset.File(base)
 	elist := scanner.ErrorList(nil)
 	switch err := err.(type) {
