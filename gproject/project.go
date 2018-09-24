@@ -138,7 +138,7 @@ func (p *Project) Load () {
 
 //-------------------------------------------------------------------
 
-func (p *Project) GetSrc (fname string) (*Src, error) {
+func (p *Project) GetSrc (fname string) (Source, error) {
 	dir, name := filepath.Split (fname)
 	dir = path.Clean(dir)
 	if pkg := p.GetPackages() [names.Put (dir)]; pkg != nil {
@@ -189,7 +189,7 @@ func (p *CompleteProc) Before (n ast.Node) bool {
 	return true
 }
 
-func (p *Project) Complete (src *Src, pos int) *results.Completion {
+func (p *Project) Complete (src Source, pos int) *results.Completion {
 	src.UpdateAst()
 	a := analyzer.New(analyzer.NewKer (p.ModeTab), p.FSet, false)
 	completeProcessor := CompleteProc{nil, analyzer.Processor{a}, token.Pos(src.GetFile().Base () + pos)}
@@ -200,7 +200,7 @@ func (p *Project) Complete (src *Src, pos int) *results.Completion {
 
 //-------------------------------------------------------------------
 
-func (p *Project) Analyze (src *Src, no int) (*results.Errors, *results.Fontify) {
+func (p *Project) Analyze (src Source, no int) (*results.Errors, *results.Fontify) {
 	pkg := src.GetPackage()
 	pkg.UpdateAsts ()
 	//src.UpdateAst()
@@ -235,7 +235,7 @@ func (p *Project) FindFiles (no int, pfx string, system bool, max int) *results.
 	for _, pkg := range p.GetPackages () {
 		for _, f := range pkg.GetSrcs () {
 			if strings.HasPrefix(f.GetName ().Name, pfx) {
-				files.Files = append (files.Files, f.FName())
+				files.Files = append (files.Files, FName (f))
 			}
 		}
 	}

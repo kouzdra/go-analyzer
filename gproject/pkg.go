@@ -11,7 +11,7 @@ type  Pkg struct {
 	dir  *names.Name
 	name *names.Name
 	pkg  *build.Package
-	srcs map [*names.Name] *Src
+	srcs map [*names.Name] Source
 	envGbl *env.Env
 	envLcl *env.Env
 }
@@ -21,7 +21,7 @@ type  Pkg struct {
 func (p *Pkg) GetProject () *Project { return p.prj; }
 func (p *Pkg) GetDir     () *names.Name { return p.dir ; }
 func (p *Pkg) GetName    () *names.Name { return p.name; }
-func (p *Pkg) GetSrcs    () map [*names.Name] *Src { return p.srcs; }
+func (p *Pkg) GetSrcs    () map [*names.Name] Source { return p.srcs; }
 func (p *Pkg) GetPackage () *build.Package { return p.pkg ; }
 func (p *Pkg) GetEnvLcl  () *env.Env { return p.envLcl; }
 func (p *Pkg) GetEnvGbl  () *env.Env { return p.envGbl; }
@@ -30,7 +30,7 @@ func (p *Pkg) GetEnvGbl  () *env.Env { return p.envGbl; }
 //--------------------------------------------------
 
 func NewPkg (p *Project, bpkg *build.Package) *Pkg {
-	return &Pkg{p, names.Put (bpkg.Dir), names.Put (bpkg.Name), bpkg, make (map [*names.Name]*Src), nil, nil}
+	return &Pkg{p, names.Put (bpkg.Dir), names.Put (bpkg.Name), bpkg, make (map [*names.Name]Source), nil, nil}
 }
 
 func (pkg *Pkg) Reload () {

@@ -50,7 +50,7 @@ func (p *Project) FindFiles (no int, pfx string, system bool, max int) {
 	for _, pkg := range p.Project.GetPackages () {
 		for _, f := range pkg.GetSrcs () {
 			if strings.HasPrefix(f.GetName().Name, pfx) {
-				files.Files = append (files.Files, f.FName())
+				files.Files = append (files.Files, gproject.FName(f))
 			}
 		}
 	}
