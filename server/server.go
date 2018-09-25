@@ -39,8 +39,8 @@ func (s *Server) expand (str string) string {
 
      return os.Expand(str, func (name string) string {
          switch name {
-	 case "GOROOT": return s.Project.Project.Context.GOROOT
-	 case "GOPATH": return s.Project.Project.Context.GOPATH
+	 case "GOROOT": return s.Project.Project.GetRoot().Name
+	 case "GOPATH": return s.Project.Project.GetPath().Name
 	 default: return os.Getenv(name)
 	 }
      })

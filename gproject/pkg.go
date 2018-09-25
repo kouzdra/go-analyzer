@@ -7,7 +7,7 @@ import "github.com/kouzdra/go-analyzer/names"
 import "github.com/kouzdra/go-analyzer/env"
 
 type  Pkg struct {
-	prj  *Prj
+	prj  *prj
 	dir  *names.Name
 	name *names.Name
 	pkg  *build.Package
@@ -18,7 +18,7 @@ type  Pkg struct {
 
 //--------------------------------------------------
 
-func (p *Pkg) GetProject () *Prj { return p.prj; }
+func (p *Pkg) GetProject () *prj { return p.prj; }
 func (p *Pkg) GetDir     () *names.Name { return p.dir ; }
 func (p *Pkg) GetName    () *names.Name { return p.name; }
 func (p *Pkg) GetSrcs    () map [*names.Name] Source { return p.srcs; }
@@ -29,7 +29,7 @@ func (p *Pkg) GetEnvGbl  () *env.Env { return p.envGbl; }
 
 //--------------------------------------------------
 
-func NewPkg (p *Prj, bpkg *build.Package) *Pkg {
+func NewPkg (p *prj, bpkg *build.Package) *Pkg {
 	return &Pkg{p, names.Put (bpkg.Dir), names.Put (bpkg.Name), bpkg, make (map [*names.Name]Source), nil, nil}
 }
 
