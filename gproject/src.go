@@ -99,7 +99,7 @@ func (src *Src) Changed (pos int, end int, newText string) {
 
 func (src *Src) ReParse () (*token.File, *ast.File, scanner.ErrorList) {
 	//src.Changed(3, 4, "a")
-	fset := src.GetPackage().GetProject ().FSet
+	fset := src.GetPackage().GetProject ().GetFileSet()
 	base := token.Pos(fset.Base())
 	ast, err := parser.ParseFile (fset, src.FName(), src.GetText(), parser.ParseComments)
 	file := fset.File(base)

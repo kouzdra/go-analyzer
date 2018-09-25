@@ -7,7 +7,7 @@ import "github.com/kouzdra/go-analyzer/gproject"
 
 type Project struct {
 	*Server
-	Project *gproject.Project
+	Project *gproject.Prj
 }
 
 func NewProject(server *Server) *Project {
