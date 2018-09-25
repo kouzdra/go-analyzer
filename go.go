@@ -9,7 +9,6 @@ import "github.com/kouzdra/go-analyzer/server"
 import "github.com/kouzdra/go-analyzer/names"
 import _ "github.com/kouzdra/go-analyzer/paths"
 import _ "github.com/kouzdra/go-analyzer/project/iface"
-import _ "github.com/kouzdra/go-analyzer/project/golang"
 import _ "github.com/kouzdra/go-analyzer/tab/sym"
 //import "flag"
 

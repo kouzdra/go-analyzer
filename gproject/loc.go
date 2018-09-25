@@ -3,14 +3,14 @@ package gproject
 import "fmt"
 
 type Loc struct {
-	Src *Src
+	Src Source
 	Pos uint
 }
 
-func (src *Src) NewLoc(pos uint) Loc {
+func (src *src) NewLoc(pos uint) Loc {
 	return Loc{src, pos}
 }
 
 func (loc *Loc) Repr() string {
-	return fmt.Sprintf("%s:%d", loc.Src.FName(), loc.Pos)
+	return fmt.Sprintf("%s:%d", FName(loc.Src), loc.Pos)
 }

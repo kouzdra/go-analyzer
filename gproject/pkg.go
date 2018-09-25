@@ -6,7 +6,7 @@ import "github.com/kouzdra/go-analyzer/names"
 //import "github.com/kouzdra/go-analyzer/paths"
 import "github.com/kouzdra/go-analyzer/env"
 
-type  Pkg struct {
+type  pkg struct {
 	prj  *prj
 	dir  *names.Name
 	name *names.Name
@@ -18,28 +18,28 @@ type  Pkg struct {
 
 //--------------------------------------------------
 
-func (p *Pkg) GetProject () *prj { return p.prj; }
-func (p *Pkg) GetDir     () *names.Name { return p.dir ; }
-func (p *Pkg) GetName    () *names.Name { return p.name; }
-func (p *Pkg) GetSrcs    () map [*names.Name] Source { return p.srcs; }
-func (p *Pkg) GetPackage () *build.Package { return p.pkg ; }
-func (p *Pkg) GetEnvLcl  () *env.Env { return p.envLcl; }
-func (p *Pkg) GetEnvGbl  () *env.Env { return p.envGbl; }
+func (p *pkg) GetProject () *prj { return p.prj; }
+func (p *pkg) GetDir     () *names.Name { return p.dir ; }
+func (p *pkg) GetName    () *names.Name { return p.name; }
+func (p *pkg) GetSrcs    () map [*names.Name] Source { return p.srcs; }
+func (p *pkg) GetPackage () *build.Package { return p.pkg ; }
+func (p *pkg) GetEnvLcl  () *env.Env { return p.envLcl; }
+func (p *pkg) GetEnvGbl  () *env.Env { return p.envGbl; }
 
 
 //--------------------------------------------------
 
-func NewPkg (p *prj, bpkg *build.Package) *Pkg {
-	return &Pkg{p, names.Put (bpkg.Dir), names.Put (bpkg.Name), bpkg, make (map [*names.Name]Source), nil, nil}
+func newPkg (p *prj, bpkg *build.Package) *pkg {
+	return &pkg{p, names.Put (bpkg.Dir), names.Put (bpkg.Name), bpkg, make (map [*names.Name]Source), nil, nil}
 }
 
-func (pkg *Pkg) Reload () {
+func (pkg *pkg) Reload () {
 	pkg.envLcl = nil
 	pkg.envGbl = nil
 }
 
 
-func (pkg *Pkg) UpdateAsts () {
+func (pkg *pkg) UpdateAsts () {
 	if pkg.GetEnvGbl() == nil || pkg.GetEnvLcl() == nil {
 		gbl := env.NewBldr ()
 		lcl := env.NewBldr ()

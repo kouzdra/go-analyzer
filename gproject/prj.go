@@ -100,10 +100,10 @@ func (p *prj) makePackage (bpkg *build.Package) Package {
 	name := names.Put (bpkg.Dir)
 	pkg := p.GetPackages() [name]
 	if pkg == nil {
-		pkg = NewPkg (p, bpkg)
+		pkg = newPkg (p, bpkg)
 		for _, f := range bpkg.GoFiles {
 			ff := names.Put (f)
-			pkg.GetSrcs () [ff] = SrcNew(pkg, name, ff)
+			pkg.GetSrcs()[ff] = srcNew(pkg, name, ff)
 		}
 		p.GetPackages () [name] = pkg
 	}
