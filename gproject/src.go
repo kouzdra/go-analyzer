@@ -13,7 +13,7 @@ import "github.com/kouzdra/go-analyzer/names"
 //import "github.com/kouzdra/go-analyzer/paths"
 
 type Src struct {
-	pkg *Pkg
+	pkg Package
 	dir  *names.Name
 	name *names.Name
 	actual bool
@@ -26,7 +26,7 @@ type Src struct {
 
 //-------------------------------------------------------
 
-func (s *Src) GetPackage () *Pkg        { return s.pkg ; }
+func (s *Src) GetPackage () Package     { return s.pkg ; }
 func (s *Src) GetDir     () *names.Name { return s.dir ; }
 func (s *Src) GetName    () *names.Name { return s.name; }
 func (s *Src) GetAst     () *  ast.File { return s.ast ; }
@@ -37,7 +37,7 @@ func (s *Src) GetInnerErrors () []results.Error   { return s.innerErrors; }
 
 //-------------------------------------------------------
 
-func SrcNew (pkg *Pkg, dir *names.Name, name *names.Name) *Src {
+func SrcNew (pkg Package, dir *names.Name, name *names.Name) *Src {
 	return &Src{pkg, dir, name, false, "", nil, nil, nil, nil}
 }
 

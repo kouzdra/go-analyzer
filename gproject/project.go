@@ -20,7 +20,7 @@ type Project struct {
 	Context build.Context
 	dirs [] *names.Name
 	Tree [] Dir
-	packages map [*names.Name]*Pkg
+	packages map [*names.Name]Package
 	FSet *token.FileSet
 	ModeTab *env.ModeTab
 }
@@ -37,7 +37,7 @@ func NewProject() *Project {
 //---------------------------------------------------
 
 func (pr *Project) GetDirs     () []*names.Name { return pr.dirs; }
-func (pr *Project) GetPackages () map [*names.Name]*Pkg { return pr.packages; }
+func (pr *Project) GetPackages () map [*names.Name]Package{ return pr.packages; }
 
 func (dir *Dir) GetPath () *names.Name { return dir.path }
 
@@ -86,7 +86,7 @@ func (p *Project) MakeSubDirs (dest []*names.Name, rootPath *names.Name, rootNam
 	return dest, append (tree, Dir{rootPath, subTree})
 }
 
-func (p *Project) MakePackage (bpkg *build.Package) *Pkg {
+func (p *Project) MakePackage (bpkg *build.Package) Package {
 	name := names.Put (bpkg.Dir)
 	pkg := p.GetPackages() [name]
 	if pkg == nil {
@@ -113,7 +113,7 @@ func  (p *Project) MakeDirs () {
 }
 
 func  (p *Project) MakePackages () {
-	p.packages = make (map[*names.Name]*Pkg)
+	p.packages = make (map[*names.Name]Package)
 	for _, dir := range p.GetDirs() {
 		pkg, err := p.Context.ImportDir (dir.Name, 0)
 		if err == nil {
