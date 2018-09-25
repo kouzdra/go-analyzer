@@ -1,4 +1,4 @@
-package gproject
+package golang
 
 //import "os"
 //import "io"
@@ -11,9 +11,10 @@ import "go/token"
 import "go/ast"
 import "github.com/kouzdra/go-analyzer/names"
 //import "github.com/kouzdra/go-analyzer/paths"
+import "github.com/kouzdra/go-analyzer/project/iface"
 
 type src struct {
-	pkg Package
+	pkg iface.Package
 	dir  *names.Name
 	name *names.Name
 	actual bool
@@ -26,7 +27,7 @@ type src struct {
 
 //-------------------------------------------------------
 
-func (s *src) GetPackage () Package     { return s.pkg ; }
+func (s *src) GetPackage () iface.Package     { return s.pkg ; }
 func (s *src) GetDir     () *names.Name { return s.dir ; }
 func (s *src) GetName    () *names.Name { return s.name; }
 func (s *src) GetAst     () *  ast.File { return s.ast ; }
@@ -37,7 +38,7 @@ func (s *src) GetInnerErrors () []results.Error   { return s.innerErrors; }
 
 //-------------------------------------------------------
 
-func srcNew (pkg Package, dir *names.Name, name *names.Name) *src {
+func srcNew (pkg iface.Package, dir *names.Name, name *names.Name) *src {
 	return &src{pkg, dir, name, false, "", nil, nil, nil, nil}
 }
 

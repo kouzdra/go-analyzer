@@ -1,27 +1,28 @@
-package gproject
+package golang
 
 import "go/build"
 //import "fmt"
 import "github.com/kouzdra/go-analyzer/names"
 //import "github.com/kouzdra/go-analyzer/paths"
 import "github.com/kouzdra/go-analyzer/env"
+import "github.com/kouzdra/go-analyzer/project/iface"
 
 type  pkg struct {
 	prj  *prj
 	dir  *names.Name
 	name *names.Name
 	pkg  *build.Package
-	srcs map [*names.Name] Source
+	srcs map [*names.Name] iface.Source
 	envGbl *env.Env
 	envLcl *env.Env
 }
 
 //--------------------------------------------------
 
-func (p *pkg) GetProject () *prj { return p.prj; }
+func (p *pkg) GetProject () iface.Project { return p.prj; }
 func (p *pkg) GetDir     () *names.Name { return p.dir ; }
 func (p *pkg) GetName    () *names.Name { return p.name; }
-func (p *pkg) GetSrcs    () map [*names.Name] Source { return p.srcs; }
+func (p *pkg) GetSrcs    () map [*names.Name] iface.Source { return p.srcs; }
 func (p *pkg) GetPackage () *build.Package { return p.pkg ; }
 func (p *pkg) GetEnvLcl  () *env.Env { return p.envLcl; }
 func (p *pkg) GetEnvGbl  () *env.Env { return p.envGbl; }
@@ -30,7 +31,7 @@ func (p *pkg) GetEnvGbl  () *env.Env { return p.envGbl; }
 //--------------------------------------------------
 
 func newPkg (p *prj, bpkg *build.Package) *pkg {
-	return &pkg{p, names.Put (bpkg.Dir), names.Put (bpkg.Name), bpkg, make (map [*names.Name]Source), nil, nil}
+	return &pkg{p, names.Put (bpkg.Dir), names.Put (bpkg.Name), bpkg, make (map [*names.Name] iface.Source), nil, nil}
 }
 
 func (pkg *pkg) Reload () {

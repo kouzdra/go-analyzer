@@ -2,22 +2,22 @@ package sym
 
 //import "github.com/kouzdra/go-analyzer/names"
 import "github.com/kouzdra/go-analyzer/paths"
-import project "github.com/kouzdra/go-analyzer/project/golang"
+import "github.com/kouzdra/go-analyzer/project/iface"
 
 type T struct {
 	Path *paths.Path
-	Defs []project.Loc
-	Refs []project.Loc
+	Defs []iface.Loc
+	Refs []iface.Loc
 }
 
 type Builder struct {
 	Path *paths.Path
-	Defs []project.Loc
-	Refs []project.Loc
+	Defs []iface.Loc
+	Refs []iface.Loc
 }
 
 func NewBuilder(path *paths.Path) Builder {
-	return Builder{path, make([]project.Loc, 0, 2), make([]project.Loc, 0, 128)}
+	return Builder{path, make([]iface.Loc, 0, 2), make([]iface.Loc, 0, 128)}
 }
 
 func (bldr *Builder) Close() T {

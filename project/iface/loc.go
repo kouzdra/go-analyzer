@@ -1,4 +1,4 @@
-package gproject
+package iface
 
 import "fmt"
 
@@ -7,7 +7,7 @@ type Loc struct {
 	Pos uint
 }
 
-func (src *src) NewLoc(pos uint) Loc {
+func NewLoc(src Source, pos uint) Loc {
 	return Loc{src, pos}
 }
 
