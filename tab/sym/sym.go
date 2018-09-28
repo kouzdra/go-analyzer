@@ -2,7 +2,7 @@ package sym
 
 //import "github.com/kouzdra/go-analyzer/names"
 import "github.com/kouzdra/go-analyzer/paths"
-import "github.com/kouzdra/go-analyzer/project/iface"
+import "github.com/kouzdra/go-analyzer/iface"
 
 type T struct {
 	Path *paths.Path

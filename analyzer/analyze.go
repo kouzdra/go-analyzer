@@ -13,7 +13,7 @@ import "github.com/kouzdra/go-analyzer/results"
 import "github.com/kouzdra/go-analyzer/env"
 import "github.com/kouzdra/go-analyzer/names"
 import "github.com/kouzdra/go-analyzer/paths"
-import "github.com/kouzdra/go-analyzer/project/iface"
+import "github.com/kouzdra/go-analyzer/iface/iproject"
 
 const (
 	Operator  = "Operator"
@@ -108,7 +108,7 @@ func new(ker *ker, fileSet *token.FileSet, collect  bool) *Analyzer {
 	return &res
 }
 
-func New(p iface.Project, collect  bool) *Analyzer {
+func New(p iproject.IProject, collect  bool) *Analyzer {
 	return new (newKer (p.GetModeTab ()), p.GetFileSet(), collect)
 }
 

@@ -3,12 +3,12 @@ package server
 import "strings"
 import "github.com/kouzdra/go-analyzer/results"
 import "github.com/kouzdra/go-analyzer/options"
-import "github.com/kouzdra/go-analyzer/project/golang"
-import "github.com/kouzdra/go-analyzer/project/iface"
+import golang "github.com/kouzdra/go-analyzer/golang/project"
+import "github.com/kouzdra/go-analyzer/iface/iproject"
 
 type Project struct {
 	*Server
-	Project iface.Project
+	Project iproject.IProject
 }
 
 func NewProject(server *Server) *Project {
@@ -51,7 +51,7 @@ func (p *Project) FindFiles (no int, pfx string, system bool, max int) {
 	for _, pkg := range p.Project.GetPackages () {
 		for _, f := range pkg.GetSrcs () {
 			if strings.HasPrefix(f.GetName().Name, pfx) {
-				files.Files = append (files.Files, iface.FName(f))
+				files.Files = append (files.Files, iproject.FName(f))
 			}
 		}
 	}

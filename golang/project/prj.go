@@ -15,13 +15,13 @@ import "github.com/kouzdra/go-analyzer/names"
 import "github.com/kouzdra/go-analyzer/analyzer"
 import "github.com/kouzdra/go-analyzer/results"
 //import "github.com/kouzdra/go-analyzer/options"
-import "github.com/kouzdra/go-analyzer/project/iface"
+import "github.com/kouzdra/go-analyzer/iface/iproject"
 
 type prj struct {
 	context build.Context
 	dirs [] *names.Name
-	tree [] iface.Dir
-	packages map [*names.Name] iface.Package
+	tree [] iproject.IDir
+	packages map [*names.Name] iproject.IPackage
 	fileSet *token.FileSet
 	modeTab *env.ModeTab
 }
@@ -29,26 +29,26 @@ type prj struct {
 //--------------------------------------------------
 
 func (p *prj) GetContext () build.Context { return p.context }
-func (p *prj) GetTree    () []iface.Dir { return p.tree }
+func (p *prj) GetTree    () []iproject.IDir { return p.tree }
 func (p *prj) GetFileSet () *token.FileSet { return p.fileSet }
 func (p *prj) GetModeTab () *env.ModeTab { return p.modeTab }
 
 func (pr *prj) GetDirs     () []*names.Name { return pr.dirs; }
-func (pr *prj) GetPackages () map [*names.Name] iface.Package{ return pr.packages; }
+func (pr *prj) GetPackages () map [*names.Name] iproject.IPackage{ return pr.packages; }
 
 //--------------------------------------------------
 
 type dir struct {
 	path *names.Name
-	sub [] iface.Dir
+	sub [] iproject.IDir
 }
 
 func (d *dir) GetPath () *names.Name { return d.path }
-func (d *dir) GetSub  () [] iface.Dir      { return d.sub  }
+func (d *dir) GetSub  () [] iproject.IDir      { return d.sub  }
 
 //--------------------------------------------------
 
-func NewProject() iface.Project {
+func NewProject() iproject.IProject {
 	return &prj{context:build.Default, fileSet:token.NewFileSet(), modeTab:env.NewModeTab ()}
 }
 
@@ -84,11 +84,12 @@ func (s *prj) MsgF (f string, args... interface{}) {
 
 //-------------------------------------------------------------------
 
-func (p *prj) makeSubDirs (dest []*names.Name, rootPath *names.Name, rootName *names.Name, tree [] iface.Dir) ([]*names.Name, [] iface.Dir) {
+func (p *prj) makeSubDirs (dest []*names.Name, rootPath *names.Name,
+	rootName *names.Name, tree [] iproject.IDir) ([]*names.Name, [] iproject.IDir) {
 	dest = append (dest, rootPath)
 	//fmt.Printf ("File: [%s]\n", root)
 	files, _ := ioutil.ReadDir (rootPath.Name)
-	subTree := make ([] iface.Dir, 0)
+	subTree := make ([] iproject.IDir, 0)
 	for _, file := range files {
 		if file.IsDir () {
 			dest, subTree = p.makeSubDirs (dest, names.Put (filepath.Join (rootPath.Name, file.Name())), names.Put (file.Name()), subTree)
@@ -97,7 +98,7 @@ func (p *prj) makeSubDirs (dest []*names.Name, rootPath *names.Name, rootName *n
 	return dest, append (tree, &dir{rootPath, subTree})
 }
 
-func (p *prj) makePackage (bpkg *build.Package) iface.Package {
+func (p *prj) makePackage (bpkg *build.Package) iproject.IPackage {
 	name := names.Put (bpkg.Dir)
 	pkg := p.GetPackages() [name]
 	if pkg == nil {
@@ -113,7 +114,7 @@ func (p *prj) makePackage (bpkg *build.Package) iface.Package {
 
 func  (p *prj) makeDirs () {
 	dirs := make ([]*names.Name, 0, 100)
-	tree := make ([]iface.Dir, 0)
+	tree := make ([]iproject.IDir, 0)
 	for _, dir := range p.context.SrcDirs () {
 		//p.Server.Writer.Log(dir)
 		dirN := names.Put (dir)
@@ -124,7 +125,7 @@ func  (p *prj) makeDirs () {
 }
 
 func  (p *prj) makePackages () {
-	p.packages = make (map[*names.Name]iface.Package)
+	p.packages = make (map[*names.Name]iproject.IPackage)
 	for _, dir := range p.GetDirs() {
 		pkg, err := p.context.ImportDir (dir.Name, 0)
 		if err == nil {
@@ -149,7 +150,7 @@ func (p *prj) Load () {
 
 //-------------------------------------------------------------------
 
-func (p *prj) GetSrc (fname string) (iface.Source, error) {
+func (p *prj) GetSrc (fname string) (iproject.ISource, error) {
 	dir, name := filepath.Split (fname)
 	dir = path.Clean(dir)
 	if pkg := p.GetPackages() [names.Put (dir)]; pkg != nil {
@@ -200,7 +201,7 @@ func (p *CompleteProc) Before (n ast.Node) bool {
 	return true
 }
 
-func (p *prj) Complete (src iface.Source, pos int) *results.Completion {
+func (p *prj) Complete (src iproject.ISource, pos int) *results.Completion {
 	src.UpdateAst()
 	a := analyzer.New(p, false)
 	completeProcessor := CompleteProc{nil, analyzer.Processor{a}, token.Pos(src.GetFile().Base () + pos)}
@@ -211,7 +212,7 @@ func (p *prj) Complete (src iface.Source, pos int) *results.Completion {
 
 //-------------------------------------------------------------------
 
-func (p *prj) Analyze (src iface.Source, no int) (*results.Errors, *results.Fontify) {
+func (p *prj) Analyze (src iproject.ISource, no int) (*results.Errors, *results.Fontify) {
 	pkg := src.GetPackage()
 	pkg.UpdateAsts ()
 	//src.UpdateAst()
@@ -245,7 +246,7 @@ func (p *prj) FindFiles (no int, pfx string, system bool, max int) *results.File
 	for _, pkg := range p.GetPackages () {
 		for _, f := range pkg.GetSrcs () {
 			if strings.HasPrefix(f.GetName ().Name, pfx) {
-				files.Files = append (files.Files, iface.FName (f))
+				files.Files = append (files.Files, iproject.FName (f))
 			}
 		}
 	}
