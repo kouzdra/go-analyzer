@@ -202,7 +202,7 @@ func (p *CompleteProc) Before (n ast.Node) bool {
 
 func (p *prj) Complete (src iface.Source, pos int) *results.Completion {
 	src.UpdateAst()
-	a := analyzer.New(analyzer.NewKer (p.GetModeTab ()), p.GetFileSet(), false)
+	a := analyzer.New(p, false)
 	completeProcessor := CompleteProc{nil, analyzer.Processor{a}, token.Pos(src.GetFile().Base () + pos)}
 	a.NodeProc = &completeProcessor
 	a.Analyze(src.GetFile(), src.GetAst())
@@ -227,8 +227,7 @@ func (p *prj) Analyze (src iface.Source, no int) (*results.Errors, *results.Font
 		}
 	}
 	
-	ker := analyzer.NewKer (p.GetModeTab())
-	a := analyzer.New(ker, p.GetFileSet(), true)
+	a := analyzer.New(p, true)
 	fName := src.GetFile().Name()
 	//a.Analyze(src.Ast)
 	a.SetTokenFile (src.GetFile())

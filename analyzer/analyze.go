@@ -13,6 +13,7 @@ import "github.com/kouzdra/go-analyzer/results"
 import "github.com/kouzdra/go-analyzer/env"
 import "github.com/kouzdra/go-analyzer/names"
 import "github.com/kouzdra/go-analyzer/paths"
+import "github.com/kouzdra/go-analyzer/project/iface"
 
 const (
 	Operator  = "Operator"
@@ -64,18 +65,18 @@ const (
         InPackage
 )
 
-type Ker struct {
-	Path *paths.Path // TODO
-	Gbl *env.Env
-	Lcl *env.Env
+type ker struct {
+	path *paths.Path // TODO
+	gbl *env.Env
+	lcl *env.Env
 	errs []results.Error
 	hils []results.FontMarker
-	ModeTab *env.ModeTab
+	modeTab *env.ModeTab
 }
 
 type Analyzer struct {
-	*Ker
-	FSet *token.FileSet
+	*ker
+	fileSet *token.FileSet
 	file *token.File
 	flags uint
 	CurrGbl, CurrLcl, CurrSearch *env.EnvBldr
@@ -85,20 +86,21 @@ type Analyzer struct {
 	NodeProc IProcessor
 }
 
-func NewKer(modeTab *env.ModeTab) *Ker {
-	var res Ker
-	res.Gbl = env.Empty
-	res.Lcl = env.Empty
-	res.ModeTab = modeTab
+func newKer(modeTab *env.ModeTab) *ker {
+	var res ker
+	res.gbl = env.Empty
+	res.lcl = env.Empty
+	res.modeTab = modeTab
 	res.errs = make([]results.Error     , 0, 10)
 	res.hils = make([]results.FontMarker, 0, 10000)
 	return &res
 }
 
-func New(ker *Ker, fSet *token.FileSet, collect  bool) *Analyzer {
+//	ker := analyzer.NewKer (p.GetModeTab())
+func new(ker *ker, fileSet *token.FileSet, collect  bool) *Analyzer {
 	var res Analyzer
-	res.Ker = ker
-	res.FSet = fSet
+	res.ker = ker
+	res.fileSet = fileSet
 	res.flags = 0
 	res.CollectHils = collect
 	res.CollectErrs = collect
@@ -106,7 +108,11 @@ func New(ker *Ker, fSet *token.FileSet, collect  bool) *Analyzer {
 	return &res
 }
 
-func (a *Analyzer) WithEnv (e *env.Env, fn func ()) {
+func New(p iface.Project, collect  bool) *Analyzer {
+	return new (newKer (p.GetModeTab ()), p.GetFileSet(), collect)
+}
+
+func (a *Analyzer) withEnv (e *env.Env, fn func ()) {
 	oldL, oldS := a.CurrLcl, a.CurrSearch
 	a.CurrLcl = env.NewBldr ()
 	a.CurrSearch = a.CurrLcl
@@ -115,7 +121,7 @@ func (a *Analyzer) WithEnv (e *env.Env, fn func ()) {
 	a.CurrLcl, a.CurrSearch = oldL, oldS
 }
 
-func (a *Analyzer) WithEnvDecl (b *env.EnvBldr, fn func ()) {
+func (a *Analyzer) withEnvDecl (b *env.EnvBldr, fn func ()) {
 	oldL := a.CurrLcl
 	a.CurrLcl = b
 	fn ()
@@ -126,7 +132,7 @@ func (a *Analyzer) Has  (flags uint) bool { return a.flags & flags != 0 }
 func (a *Analyzer) Set  (flags uint) { a.flags |= flags }
 func (a *Analyzer) Clear(flags uint) { a.flags &=^flags }
 
-func (a *Analyzer) WithFlags (body func()) {
+func (a *Analyzer) withFlags (body func()) {
 	flags := a.flags
 	body ()
 	a.flags = flags
@@ -239,7 +245,7 @@ func (a *Analyzer) DeclIdentExpr (e ast.Expr) {
 	switch e := e.(type) {
 	case *ast.Ident:
 		a.Hil(VarDef, e)
-		a.Declare (env.KVar, names.Put(e.Name), nil, a.ModeTab.Any, e)
+		a.Declare (env.KVar, names.Put(e.Name), nil, a.modeTab.Any, e)
 	default:
 		a.Error(e.Pos(), e.End(), "ident node required")
 	}
@@ -316,7 +322,7 @@ func (a *Analyzer) SwitchStmt (s *ast.SwitchStmt) {
 		a.HilAt(Keyword, s.Switch, 6)
 		if s.Init != nil { a.Stmt(s.Init) }
 		if s.Tag  != nil { a.Expr(s.Tag ) }
-		a.WithFlags (func () { a.Set (inSimpleSwitch); a.BlockStmt(s.Body)})
+		a.withFlags (func () { a.Set (inSimpleSwitch); a.BlockStmt(s.Body)})
 	})
 }
 
@@ -325,7 +331,7 @@ func (a *Analyzer) TypeSwitchStmt (s *ast.TypeSwitchStmt) {
 		a.HilAt(Keyword, s.Switch, 6)
 		if s.Init != nil { a.Stmt(s.Init) }
 		a.Stmt(s.Assign)
-		a.WithFlags (func () { a.Set (inTypeSwitch); a.BlockStmt(s.Body)})
+		a.withFlags (func () { a.Set (inTypeSwitch); a.BlockStmt(s.Body)})
 	})
 }
 
@@ -357,7 +363,7 @@ func (a *Analyzer) CaseClause (s *ast.CaseClause) {
 	}
 	a.HilAt(Separator, s.Colon, 1)
 	for _, s := range s.Body {
-		a.WithFlags (func () { a.Clear(inTypeSwitch + inSimpleSwitch); a.Stmt(s) })
+		a.withFlags (func () { a.Clear(inTypeSwitch + inSimpleSwitch); a.Stmt(s) })
 	}
 }
 
@@ -405,7 +411,7 @@ func (a *Analyzer) TryExpr (e ast.Expr) (env.Mode, bool) {
 	ok := true
 	a.WithNode (InExpr, e, func () {
 		switch e := e.(type) {
-		case *ast.       BadExpr: a.Hil(Error, e); res = a.ModeTab.Err
+		case *ast.       BadExpr: a.Hil(Error, e); res = a.modeTab.Err
 		case *ast.         Ident: res = a.     IdentExpr(e)
 		case *ast.      CallExpr: res = a.      CallExpr(e)
 		case *ast.      StarExpr: res = a.      StarExpr(e)
@@ -420,7 +426,7 @@ func (a *Analyzer) TryExpr (e ast.Expr) (env.Mode, bool) {
 		case *ast.  CompositeLit: res = a.  CompositeLit(e)
 		case *ast.      BasicLit: res = a.      BasicLit(e)
 		case *ast.       FuncLit: res = a.       FuncLit(e)
-		default: if e != nil { ok = false; }; res = a.ModeTab.Err
+		default: if e != nil { ok = false; }; res = a.modeTab.Err
 		}
 	})
 	return res, ok
@@ -429,10 +435,10 @@ func (a *Analyzer) TryExpr (e ast.Expr) (env.Mode, bool) {
 func (a *Analyzer) IdentExpr (id *ast.Ident) env.Mode {
     if d, any := a.CurrSearch.Find (names.Put(id.Name)); !any && d == nil {
 	a.NewError(id.Pos(), id.End(), "`" + id.Name + "' undefined")
-	return a.ModeTab.Err
+	return a.modeTab.Err
     } else if d == nil {
 	a.Hil(VarRef, id)
-	return a.ModeTab.Any
+	return a.modeTab.Any
     } else {
 	switch d.Kind {
  	case env.KVar    : a.Hil(VarRef, id)
@@ -450,7 +456,7 @@ func (a *Analyzer) IdentExpr (id *ast.Ident) env.Mode {
 func (a *Analyzer) CallExpr (e * ast.CallExpr) env.Mode {
 	fMode := a.Expr(e.Fun)
 	a.HilAt(Token, e.Lparen, 1)
-	if fMode == a.ModeTab.Make {
+	if fMode == a.modeTab.Make {
 	   if len (e.Args) == 0 {
      	       a.Error (e.Pos (), e.End (), "type argument required")
 	   } else {
@@ -466,7 +472,7 @@ func (a *Analyzer) CallExpr (e * ast.CallExpr) env.Mode {
 	   for _, arg := range e.Args { a.Expr(arg) }
 	}
 	a.HilAt(Token, e.Rparen, 1)
-	return a.ModeTab.Err
+	return a.modeTab.Err
 }
 
 func (a *Analyzer) StarExpr (t *ast.StarExpr) env.Mode {
@@ -477,7 +483,7 @@ func (a *Analyzer) StarExpr (t *ast.StarExpr) env.Mode {
 		if !env.MAny (m) {
 			a.Error (t.X.Pos (), t.X.End (), "pointer type required")
 		}
-		return a.ModeTab.Err
+		return a.modeTab.Err
 	}
 }
 
@@ -486,7 +492,7 @@ func (a *Analyzer) IndexExpr (e *ast.IndexExpr) env.Mode {
 	a.HilAt(Token, e.Lbrack, 1)
 	a.Expr(e.Index)
 	a.HilAt(Token, e.Rbrack, 1)
-	return a.ModeTab.Err
+	return a.modeTab.Err
 }
 
 func (a *Analyzer) SliceExpr (e *ast.SliceExpr) env.Mode {
@@ -496,14 +502,14 @@ func (a *Analyzer) SliceExpr (e *ast.SliceExpr) env.Mode {
 	if e.High != nil { a.Expr(e.High) }
 	if e.Max  != nil { a.Expr(e.Max ) }
 	a.HilAt(Token, e.Rbrack, 1)
-	return a.ModeTab.Err
+	return a.modeTab.Err
 }
 
 func (a *Analyzer) ParenExpr (e *ast.ParenExpr) env.Mode {
 	a.HilAt(Token, e.Lparen, 1)
 	a.Expr(e.X)
 	a.HilAt(Token, e.Rparen, 1)
-	return a.ModeTab.Err
+	return a.modeTab.Err
 }
 
 func (a *Analyzer) SelectorExpr (e *ast.SelectorExpr) env.Mode {
@@ -516,17 +522,17 @@ func (a *Analyzer) SelectorExpr (e *ast.SelectorExpr) env.Mode {
 	}
 	switch m := m.(type) {
 	case *env.Struct:
-		a.WithEnv(m.Flds, func () { res = a.Expr(e.Sel) })
+		a.withEnv(m.Flds, func () { res = a.Expr(e.Sel) })
 	case *env.Builtin:
 		if *m != env.KErr && *m != env.KAny {
 			a.Error(e.X.Pos(), e.X.End(), "struct type required instead of '" + m.Head() + "'")
 		}
-		a.WithEnv(env.Any, func () { a.Expr(e.Sel) })
-		res = a.ModeTab.Err
+		a.withEnv(env.Any, func () { a.Expr(e.Sel) })
+		res = a.modeTab.Err
 	default:
 		a.Error(e.X.Pos(), e.X.End(), "struct type required instead of '" + m.Head () + "'")
-		a.WithEnv(env.Any, func () { a.Expr(e.Sel) })
-		res = a.ModeTab.Err
+		a.withEnv(env.Any, func () { a.Expr(e.Sel) })
+		res = a.modeTab.Err
 	}
 	return res
 }
@@ -535,7 +541,7 @@ func (a *Analyzer) KeyValueExpr (e *ast.KeyValueExpr) env.Mode {
 	a.Expr(e.Key)
 	a.HilAt(Separator, e.Colon, 1)
 	a.Expr(e.Value)
-	return a.ModeTab.Err
+	return a.modeTab.Err
 }
 
 func (a *Analyzer) TypeAssertExpr (e *ast.TypeAssertExpr) env.Mode {
@@ -543,37 +549,37 @@ func (a *Analyzer) TypeAssertExpr (e *ast.TypeAssertExpr) env.Mode {
 	a.HilAt(Token, e.Lparen, 1)
 	a.Type(e.Type)
 	a.HilAt(Token, e.Rparen, 1)
-	return a.ModeTab.Err
+	return a.modeTab.Err
 }
 
 func (a *Analyzer) UnaryExpr (e *ast.UnaryExpr) env.Mode {
 	a.HilAt(Unary, e.OpPos, len(e.Op.String()))
 	a.Expr(e.X)
-	return a.ModeTab.Err
+	return a.modeTab.Err
 }
 
 func (a *Analyzer) BinaryExpr (e *ast.BinaryExpr) env.Mode {
 	a.Expr(e.X)
 	a.HilAt(Binary, e.OpPos, len(e.Op.String()))
 	a.Expr(e.Y)
-	return a.ModeTab.Err
+	return a.modeTab.Err
 }
 
 func (a *Analyzer) FuncLit (f *ast.FuncLit) env.Mode {
 	a.FuncType (f.Type)
 	a.BlockStmt(f.Body)
-	return a.ModeTab.Err
+	return a.modeTab.Err
 }
 
 func (a *Analyzer) BasicLit (c *ast.BasicLit) env.Mode {
 	switch c.Kind {
-	case token.STRING: a.Hil(String   , c); return a.ModeTab.String
-	case token.  CHAR: a.Hil(Char     , c); return a.ModeTab.Int
-	case token.   INT: a.Hil(Number   , c); return a.ModeTab.Int
-	case token. FLOAT: a.Hil(Number   , c); return a.ModeTab.Float64
-	case token.  IMAG: a.Hil(Number   , c); return a.ModeTab.Complex128
+	case token.STRING: a.Hil(String   , c); return a.modeTab.String
+	case token.  CHAR: a.Hil(Char     , c); return a.modeTab.Int
+	case token.   INT: a.Hil(Number   , c); return a.modeTab.Int
+	case token. FLOAT: a.Hil(Number   , c); return a.modeTab.Float64
+	case token.  IMAG: a.Hil(Number   , c); return a.modeTab.Complex128
 	}
-	return a.ModeTab.Err
+	return a.modeTab.Err
 }
 
 func (a *Analyzer) CompositeLit (e *ast.CompositeLit) env.Mode {
@@ -581,7 +587,7 @@ func (a *Analyzer) CompositeLit (e *ast.CompositeLit) env.Mode {
 	a.HilAt(Token, e.Lbrace, 1)
 	for _, elt := range e.Elts { a.Expr(elt) }
 	a.HilAt(Token, e.Rbrace, 1)
-	return a.ModeTab.Err
+	return a.modeTab.Err
 }
 
 //===================================================================
@@ -601,7 +607,7 @@ func (a *Analyzer) TryType (t ast.Expr) (env.Mode, bool) {
 	a.WithNode (InType, t, func () {
 		switch t := t.(type) {
 		case *ast.        Ident: res = a.    IdentType(t)
-		case *ast.      BadExpr: a.  Hil(Error,  t); res = a.ModeTab.Err
+		case *ast.      BadExpr: a.  Hil(Error,  t); res = a.modeTab.Err
 		case *ast.      MapType: res = a.      MapType(t)
 		case *ast.     StarExpr: res = a.     StarType(t)
 		case *ast.     FuncType: res = a.     FuncType(t)
@@ -611,7 +617,7 @@ func (a *Analyzer) TryType (t ast.Expr) (env.Mode, bool) {
 		case *ast.     Ellipsis: res = a. EllipsisType(t)
 		case *ast.InterfaceType: res = a.InterfaceType(t)
 		case *ast. SelectorExpr: res = a. SelectorType(t)
-		default: ok = (t == nil); res = a.ModeTab.Err
+		default: ok = (t == nil); res = a.modeTab.Err
 		}
 	})
 	return res, ok
@@ -620,10 +626,10 @@ func (a *Analyzer) TryType (t ast.Expr) (env.Mode, bool) {
 func (a *Analyzer) IdentType (id *ast.Ident) env.Mode {
     if d, any := a.CurrSearch.Find (names.Put(id.Name)); !any && d == nil {
 	a.Error(id.Pos(), id.End(), "type `" + id.Name + "' undefined")
-	return a.ModeTab.Err
+	return a.modeTab.Err
     } else if d == nil {
 	a.  Hil(TypRef, id)
-	return a.ModeTab.Err
+	return a.modeTab.Err
     } else {
 	switch d.Kind {
  	case env.KVar    : a.Hil(VarRef, id)
@@ -643,13 +649,13 @@ func (a *Analyzer) IdentType (id *ast.Ident) env.Mode {
 func (a *Analyzer) EllipsisType (t *ast.Ellipsis) env.Mode {
 	a.HilAt(Token, t.Ellipsis, 3)
 	a.Type(t.Elt)
-	return a.ModeTab.Err
+	return a.modeTab.Err
 }
 
 func (a *Analyzer) StarType (t *ast.StarExpr) env.Mode {
 	a.HilAt(Operator, t.Star, 1)
 	m := a.Type(t.X)
-	return a.ModeTab.Ref (m)
+	return a.modeTab.Ref (m)
 }
 
 func (a *Analyzer) ChanType (t *ast.ChanType) env.Mode {
@@ -662,13 +668,13 @@ func (a *Analyzer) ChanType (t *ast.ChanType) env.Mode {
 	  a.HilAt(Separator, t.Begin, 2)
 	}
 	a.Type(t.Value)
-	return a.ModeTab.Err
+	return a.modeTab.Err
 }
 
 func (a *Analyzer) SelectorType (t *ast.SelectorExpr) env.Mode {
 	a.Type(t.X)
-	a.WithEnv(env.Any, func () { a.Type(t.Sel) })
-	return a.ModeTab.Err
+	a.withEnv(env.Any, func () { a.Type(t.Sel) })
+	return a.modeTab.Err
 
 }
 
@@ -676,22 +682,22 @@ func (a *Analyzer) FuncType (t *ast.FuncType) env.Mode {
 	a.HilAt(Keyword, t.Func, 4)
 	a.FieldList(t.Params)
 	a.FieldList(t.Results)
-	return a.ModeTab.Err
+	return a.modeTab.Err
 }
 
 func (a *Analyzer) StructType (t *ast.StructType) env.Mode {
 	a.HilAt(Keyword, t.Struct, 6)
 	bldr := env.NewBldr ()
-	a.WithEnvDecl (bldr, func () {
+	a.withEnvDecl (bldr, func () {
 		a.FieldList(t.Fields)
 	})
-	return a.ModeTab.Struct(bldr.Close ())
+	return a.modeTab.Struct(bldr.Close ())
 }
 
 func (a *Analyzer) InterfaceType (t *ast.InterfaceType) env.Mode {
 	a.HilAt(Keyword, t.Interface, 9)
 	a.FieldList(t.Methods)
-	return a.ModeTab.Err
+	return a.modeTab.Err
 }
 
 func (a *Analyzer) ArrayType (t *ast.ArrayType) env.Mode {
@@ -699,24 +705,24 @@ func (a *Analyzer) ArrayType (t *ast.ArrayType) env.Mode {
 	var size *int = nil
 	if t.Len != nil { /*sizeV := a.Expr(t.Len); size = &sizeV*/ } // TODO: size
 	elem := a.Type(t.Elt)
-	return a.ModeTab.Array (size, elem)
+	return a.modeTab.Array (size, elem)
 }
 
 func (a *Analyzer) MapType (t *ast.MapType) env.Mode {
 	a.HilAt(Keyword, t.Map, 3)
 	a.Type(t.Key)
 	a.Type(t.Value)
-	return a.ModeTab.Err
+	return a.modeTab.Err
 }
 
 //===================================================================
 
 func (a *Analyzer) Declare (k env.Kind, n *names.Name, t ast.Expr, m env.Mode, v ast.Node) {
-	m = a.ModeTab.Find (m);
+	m = a.modeTab.Find (m);
 	if n.Gbl () {
-		a.CurrGbl.Declare(k, n, a.Path, t, m, v)
+		a.CurrGbl.Declare(k, n, a.path, t, m, v)
 	} else {
-		a.CurrLcl.Declare(k, n, a.Path, t, m, v)
+		a.CurrLcl.Declare(k, n, a.path, t, m, v)
 	}
 }
 
@@ -736,7 +742,7 @@ func (a *Analyzer) FuncDecl (d *ast.FuncDecl) {
 	//a.FuncType(d.Type)
 	//if d.Recv != nil { a.FieldList(d.Recv) }
 	a.Hil(FunDef, d.Name)
-	a.Declare(env.KFunc, names.Put(d.Name.Name), d.Type, a.ModeTab.Any, d)
+	a.Declare(env.KFunc, names.Put(d.Name.Name), d.Type, a.modeTab.Any, d)
 }
 
 func (a *Analyzer) GenDecl (d *ast.GenDecl) {
@@ -764,7 +770,7 @@ func (a *Analyzer) GenDecl (d *ast.GenDecl) {
 func (a *Analyzer) Field (f *ast.Field) {
 	m := a.Type (f.Type)
 	for _, id := range f.Names {
-		a.CurrLcl.Declare(env.KVar, names.Put(id.Name), a.Path, f.Type, m, nil)
+		a.CurrLcl.Declare(env.KVar, names.Put(id.Name), a.path, f.Type, m, nil)
 		//fmt.Println (id)
 		a.Hil (VarDef, id)
 	}
@@ -789,13 +795,13 @@ func (a *Analyzer) FieldList (fl *ast.FieldList) {
 func (a *Analyzer) ImportSpec (imp *ast.ImportSpec) {
 	if imp.Name != nil {
 		a.Hil (PkgDef, imp.Name)
-		a.Declare(env.KPackage, names.Put(imp.Name.Name), nil, a.ModeTab.Any, imp)
+		a.Declare(env.KPackage, names.Put(imp.Name.Name), nil, a.modeTab.Any, imp)
 	} else {
 		p, err := strconv.Unquote(imp.Path.Value)
 		if err != nil {
 			a.Error(imp.Path.Pos(), imp.Path.End(), "invalid path syntax")
 		} else {
-			a.Declare(env.KPackage, names.Put (path.Base(p)), nil, a.ModeTab.Any, imp) // TODO: get file name
+			a.Declare(env.KPackage, names.Put (path.Base(p)), nil, a.modeTab.Any, imp) // TODO: get file name
 		}
 	}
 	a.BasicLit(imp.Path)
@@ -806,9 +812,9 @@ func (a *Analyzer) ValueSpec (v *ast.ValueSpec) {
 	for i, id := range v.Names {
 		a.Hil (ValDef, id)
 		if v.Values == nil {
-			a.Declare(env.KConst, names.Put(id.Name), v.Type, a.ModeTab.Any, nil)
+			a.Declare(env.KConst, names.Put(id.Name), v.Type, a.modeTab.Any, nil)
 		} else {
-			a.Declare(env.KConst, names.Put(id.Name), v.Type, a.ModeTab.Any, v.Values[i])
+			a.Declare(env.KConst, names.Put(id.Name), v.Type, a.modeTab.Any, v.Values[i])
 		}
 	}
 	if v.Comment != nil { a.Hil (Comment, v.Comment) }
@@ -816,7 +822,7 @@ func (a *Analyzer) ValueSpec (v *ast.ValueSpec) {
 
 func (a *Analyzer) TypeSpec (t *ast.TypeSpec) {
 	a.Hil (TypDef, t.Name)
-	a.Declare(env.KType, names.Put(t.Name.Name), t.Type, a.ModeTab.Any, nil)
+	a.Declare(env.KType, names.Put(t.Name.Name), t.Type, a.modeTab.Any, nil)
 
 	if t.Comment != nil { a.Hil (Comment, t.Comment) }
 }
@@ -825,18 +831,18 @@ func (a *Analyzer) TypeSpec (t *ast.TypeSpec) {
 
 func (a *Analyzer) AnalyzeFileIntr (f *ast.File) {
 	a.CurrGbl = env.NewBldr()
-	a.CurrGbl.Nested (a.ModeTab.BEnv)
+	a.CurrGbl.Nested (a.modeTab.BEnv)
 	a.CurrLcl = env.NewBldr()
 	a.CurrSearch = a.CurrLcl
 	a.HilAt (Keyword, f.Package, 7)
 	a.Hil   (PkgDef , f.Name)
-	a.Declare (env.KPackage, names.Put(f.Name.Name), nil, a.ModeTab.Any, nil)
+	a.Declare (env.KPackage, names.Put(f.Name.Name), nil, a.modeTab.Any, nil)
 	if f.Doc != nil { a.Hil (Comment, f.Doc) }
  	for _, c    := range f.Comments   { a.Hil   (Comment, c) }
 	for _, decl := range f.Decls      { a.Decl (decl) }
-	a.Gbl = a.CurrGbl.Close()
-	a.CurrLcl.Nested (a.Gbl)
-	a.Lcl = a.CurrLcl.Close()
+	a.gbl = a.CurrGbl.Close()
+	a.CurrLcl.Nested (a.gbl)
+	a.lcl = a.CurrLcl.Close()
 }
 
 //-----------------------------------------------------------------
@@ -844,13 +850,13 @@ func (a *Analyzer) AnalyzeFileIntr (f *ast.File) {
 func (a *Analyzer) AnalyzeFileBody (f *ast.File) {
 	a.CurrLcl = env.NewBldr ()
 	a.CurrGbl = a.CurrLcl
-	a.CurrGbl.Nested(a.Lcl)
+	a.CurrGbl.Nested(a.lcl)
 	a.CurrSearch = a.CurrLcl
 
 	a.CurrLcl.Scan(func (d *env.Decl) bool {
 		if d.Kind == env.KType {
 		        //fmt.Printf ("d.Name=%v, mode=%s\n", d.Name, d.Mode.Repr ())
-			d.Mode = a.ModeTab.IdType (d, a.Type (d.Type))
+			d.Mode = a.modeTab.IdType (d, a.Type (d.Type))
 		}
 		return true
 	})
@@ -862,7 +868,7 @@ func (a *Analyzer) AnalyzeFileBody (f *ast.File) {
 			m := d.Mode
 			if d.Type != nil { m = a.Type(d.Type) }
 			if d.Kind == env.KType {
-				m = a.ModeTab.IdType (d, m)
+				m = a.modeTab.IdType (d, m)
 			}
 			switch n := d.Value.(type) {
 			case *ast.FuncDecl:
