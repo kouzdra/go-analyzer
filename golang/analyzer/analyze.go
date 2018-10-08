@@ -13,6 +13,7 @@ import "github.com/kouzdra/go-analyzer/results"
 import "github.com/kouzdra/go-analyzer/env"
 import "github.com/kouzdra/go-analyzer/names"
 import "github.com/kouzdra/go-analyzer/paths"
+//import "github.com/kouzdra/go-analyzer/golang/project"
 import "github.com/kouzdra/go-analyzer/iface/iproject"
 
 const (
@@ -68,6 +69,7 @@ const (
 type ker struct {
 	Hils results.Hils
 	Errs results.Errs
+	src  iproject.ISource
 	path *paths.Path // TODO
 	gbl *env.Env
 	lcl *env.Env
@@ -86,10 +88,11 @@ type Analyzer struct {
 	NodeProc IProcessor
 }
 
-func newKer(modeTab *env.ModeTab) *ker {
+func newKer(modeTab *env.ModeTab, src iproject.ISource) *ker {
 	return &ker{
 		Errs   :results.NewErrs(),
 		Hils   :results.NewHils(),
+		src    :src,
 		gbl    :env.Empty,
 		lcl    :env.Empty,
 		modeTab:modeTab}
@@ -107,8 +110,8 @@ func new(ker *ker, fileSet *token.FileSet, collect  bool) *Analyzer {
 	return &res
 }
 
-func New(p iproject.IProject, collect  bool) *Analyzer {
-	return new (newKer (p.GetModeTab ()), p.GetFileSet(), collect)
+func New(p iproject.IProject, src iproject.ISource, collect  bool) *Analyzer {
+	return new (newKer (p.GetModeTab (), src), p.GetFileSet(), collect)
 }
 
 func (a *Analyzer) withEnv (e *env.Env, fn func ()) {
@@ -895,7 +898,7 @@ func (a *Analyzer) analyzeFileBody (f *ast.File) {
 
 //===================================================================
 
-func (a *Analyzer) SetOuterErrors (e scanner.ErrorList) {
+func (a *Analyzer) setOuterErrors (e scanner.ErrorList) {
 	for _, err := range e {
 		length := 1
 		prefix := "expected '.', found 'IDENT' "
@@ -907,10 +910,9 @@ func (a *Analyzer) SetOuterErrors (e scanner.ErrorList) {
 	}
 }
 
-//===================================================================
-
-func (a *Analyzer) Analyze (file *token.File, f *ast.File) {
-	a.file = file
-	a.analyzeFileIntr(f)
-	a.analyzeFileBody(f)
+func (a *Analyzer) Analyze () {
+	a.setOuterErrors (a.src.GetOuterErrors())
+	a.file = a.src.GetFile()
+	a.analyzeFileIntr(a.src.GetAst())
+	a.analyzeFileBody(a.src.GetAst())
 }

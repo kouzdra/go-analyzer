@@ -203,10 +203,10 @@ func (p *CompleteProc) Before (n ast.Node) bool {
 
 func (p *prj) Complete (src iproject.ISource, pos int) *results.Completion {
 	src.UpdateAst()
-	a := analyzer.New(p, false)
+	a := analyzer.New(p, src, false)
 	completeProcessor := CompleteProc{nil, analyzer.Processor{a}, token.Pos(src.GetFile().Base () + pos)}
 	a.NodeProc = &completeProcessor
-	a.Analyze(src.GetFile(), src.GetAst())
+	a.Analyze()
 	return completeProcessor.Results
 }
 
@@ -228,12 +228,10 @@ func (p *prj) Analyze (src iproject.ISource, no int) (*results.Errors, *results.
 		}
 	}
 	
-	a := analyzer.New(p, true)
-	fName := src.GetFile().Name()
-	//a.Analyze(src.Ast)
-	a.SetOuterErrors (src.GetOuterErrors())
-	a.Analyze (src.GetFile(), src.GetAst())///
+	a := analyzer.New(p, src, true)
+	a.Analyze ()///
 	//a.Curr.Print()
+	fName := src.GetFile().Name()
 	return a.Errs.GetErrors (fName, no), a.Hils.GetFonts (fName, fName, no, 0, src.GetFile().Size())
 }
 
