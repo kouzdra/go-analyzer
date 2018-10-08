@@ -66,11 +66,11 @@ const (
 )
 
 type ker struct {
+	Hils results.Hils
+	Errs results.Errs
 	path *paths.Path // TODO
 	gbl *env.Env
 	lcl *env.Env
-	errs []results.Error
-	hils []results.FontMarker
 	modeTab *env.ModeTab
 }
 
@@ -87,13 +87,12 @@ type Analyzer struct {
 }
 
 func newKer(modeTab *env.ModeTab) *ker {
-	var res ker
-	res.gbl = env.Empty
-	res.lcl = env.Empty
-	res.modeTab = modeTab
-	res.errs = make([]results.Error     , 0, 10)
-	res.hils = make([]results.FontMarker, 0, 10000)
-	return &res
+	return &ker{
+		Errs   :results.NewErrs(),
+		Hils   :results.NewHils(),
+		gbl    :env.Empty,
+		lcl    :env.Empty,
+		modeTab:modeTab}
 }
 
 //	ker := analyzer.NewKer (p.GetModeTab())
@@ -128,9 +127,9 @@ func (a *Analyzer) withEnvDecl (b *env.EnvBldr, fn func ()) {
 	a.CurrLcl = oldL
 }
 
-func (a *Analyzer) Has  (flags uint) bool { return a.flags & flags != 0 }
-func (a *Analyzer) Set  (flags uint) { a.flags |= flags }
-func (a *Analyzer) Clear(flags uint) { a.flags &=^flags }
+func (a *Analyzer) has  (flags uint) bool { return a.flags & flags != 0 }
+func (a *Analyzer) set  (flags uint) { a.flags |= flags }
+func (a *Analyzer) clear(flags uint) { a.flags &=^flags }
 
 func (a *Analyzer) withFlags (body func()) {
 	flags := a.flags
@@ -144,7 +143,7 @@ func (a *Analyzer) PosValid(p token.Pos) bool {
 	return beg <= p && p <= end
 }
 
-func (a *Analyzer) Offset (p token.Pos) int {
+func (a *Analyzer) offset (p token.Pos) int {
 	beg := token.Pos(                a.file.Base())
 	end := token.Pos(a.file.Base() + a.file.Size())
 	if p < beg { p = beg }
@@ -152,39 +151,39 @@ func (a *Analyzer) Offset (p token.Pos) int {
 	return a.file.Offset(p)
 }
 
-func (a *Analyzer) Hil (color string, n ast.Node) *Analyzer {
-	a.HilR(color, n.Pos(), n.End())
+func (a *Analyzer) hil (color string, n ast.Node) *Analyzer {
+	a.hilR(color, n.Pos(), n.End())
 	return a
 }
 
-func (a *Analyzer) HilAt (color string, p token.Pos, l int) *Analyzer {
-	return a.HilR(color, p, token.Pos(int (p) + l))
+func (a *Analyzer) hilAt (color string, p token.Pos, l int) *Analyzer {
+	return a.hilR(color, p, token.Pos(int (p) + l))
 }
 
-func (a *Analyzer) HilR (color string, beg token.Pos,  end token.Pos)  *Analyzer {
+func (a *Analyzer) hilR (color string, beg token.Pos,  end token.Pos)  *Analyzer {
 	if !a.CollectHils { return a }
 	if a.PosValid(beg) && a.PosValid(end) {
-		a.hils = append(a.hils, results.FontMarker{color, a.Offset(beg), a.Offset(end)})
+		a.Hils.Add (color, a.offset(beg), a.offset(end))
 	}
 	return a
 }
 
-func (a *Analyzer) error (lvl string, beg token.Pos, end token.Pos, msg string) {
+func (a *Analyzer) errorG (lvl string, beg token.Pos, end token.Pos, msg string) {
 	if !a.CollectErrs { return }
-	obeg := a.Offset(beg)
-	oend := a.Offset(end)
+	obeg := a.offset(beg)
+	oend := a.offset(end)
 	if obeg == oend && obeg != 0 { obeg -- }
-	a.errs = append (a.errs, results.Error{lvl, obeg, oend, msg})
+	a.Errs.Add (lvl, obeg, oend, msg)
 }
 
-func (a *Analyzer) Note       (beg token.Pos, end token.Pos, msg string) { a.error (results.ERR_NOTE , beg, end, msg) }
-func (a *Analyzer) Warning    (beg token.Pos, end token.Pos, msg string) { a.error (results.ERR_WARN , beg, end, msg) }
-func (a *Analyzer) Error      (beg token.Pos, end token.Pos, msg string) { a.error (results.ERR_ERROR, beg, end, msg) }
-func (a *Analyzer) NewError   (beg token.Pos, end token.Pos, msg string) {  }
+func (a *Analyzer) note       (beg token.Pos, end token.Pos, msg string) { a.errorG (results.ERR_NOTE , beg, end, msg) }
+func (a *Analyzer) warning    (beg token.Pos, end token.Pos, msg string) { a.errorG (results.ERR_WARN , beg, end, msg) }
+func (a *Analyzer) error      (beg token.Pos, end token.Pos, msg string) { a.errorG (results.ERR_ERROR, beg, end, msg) }
+func (a *Analyzer) newError   (beg token.Pos, end token.Pos, msg string) {  }
 
 //===================================================================
 
-func (a *Analyzer) WithNode (kind NClass, node ast.Node, fn func ()) {
+func (a *Analyzer) withNode (kind NClass, node ast.Node, fn func ()) {
 	old := a.NodeClass
 	a.NodeClass = kind
 	defer func () { a.NodeClass = old } ()
@@ -196,10 +195,10 @@ func (a *Analyzer) WithNode (kind NClass, node ast.Node, fn func ()) {
 //===================================================================
 
 func (a *Analyzer) stmt (s ast.Stmt) {
-	a.WithNode (InStmt, s, func () {
+	a.withNode (InStmt, s, func () {
 		switch s := s.(type) {
 		case *ast.      ExprStmt: a.expr(s.X)
-		case *ast.       BadStmt: a.Hil(Error, s)
+		case *ast.       BadStmt: a.hil(Error, s)
 		case *ast.     BlockStmt: a.     blockStmt(s)
 		case *ast.    AssignStmt: a.    assignStmt(s)
 		case *ast.    ReturnStmt: a.    returnStmt(s)
@@ -210,7 +209,7 @@ func (a *Analyzer) stmt (s ast.Stmt) {
 		case *ast.    SelectStmt: a.    selectStmt(s)
 		case *ast.      SendStmt: a.      sendStmt(s)
 		case *ast.     RangeStmt: a.     rangeStmt(s)
-		case *ast.     EmptyStmt: a.HilAt(Separator, s.Semicolon, 1)
+		case *ast.     EmptyStmt: a.hilAt(Separator, s.Semicolon, 1)
 		case *ast.     DeferStmt: a.     deferStmt(s)
 		case *ast.   LabeledStmt: a.   labeledStmt(s)
 		case *ast.       ForStmt: a.       forStmt(s)
@@ -218,36 +217,36 @@ func (a *Analyzer) stmt (s ast.Stmt) {
 		case *ast.        IfStmt: a.        ifStmt(s)
 		case *ast.CaseClause: a.caseClause(s)
 		case *ast.CommClause: a.commClause(s)
-		default: if s != nil { a.Error(s.Pos(), s.End(), "unknown stmt node") }
+		default: if s != nil { a.error(s.Pos(), s.End(), "unknown stmt node") }
 		}
 	})
 }
 
 func (a *Analyzer) hilAssn (tok token.Token, pos token.Pos) {
 	switch tok {
-	case token.DEFINE: a.HilAt(Separator, pos, 2)
-	case token.ASSIGN: a.HilAt(Separator, pos, 1)
+	case token.DEFINE: a.hilAt(Separator, pos, 2)
+	case token.ASSIGN: a.hilAt(Separator, pos, 1)
 	}
 }
 
 func (a *Analyzer) incDecStmt (s *ast.IncDecStmt) {
 	a.expr(s.X)
-	a.HilAt(Unary, s.TokPos, 2)
+	a.hilAt(Unary, s.TokPos, 2)
 }
 
 func (a *Analyzer) labeledStmt (s *ast.LabeledStmt) {
 	a.identExpr(s.Label)
-	a.HilAt(Separator, s.Colon, 1)
+	a.hilAt(Separator, s.Colon, 1)
 	a.stmt(s.Stmt)
 }
 
 func (a *Analyzer) declIdentExpr (e ast.Expr) {
 	switch e := e.(type) {
 	case *ast.Ident:
-		a.Hil(VarDef, e)
+		a.hil(VarDef, e)
 		a.declare (env.KVar, names.Put(e.Name), nil, a.modeTab.Any, e)
 	default:
-		a.Error(e.Pos(), e.End(), "ident node required")
+		a.error(e.Pos(), e.End(), "ident node required")
 	}
 }
 
@@ -259,24 +258,24 @@ func (a *Analyzer) assignStmt (s *ast.AssignStmt) {
 		for _, l := range s.Lhs {
 			a.declIdentExpr(l)
 		}
-		a.HilAt(Separator, s.TokPos, 2)
+		a.hilAt(Separator, s.TokPos, 2)
 
 	default:
 		for _, l := range s.Lhs { a.expr(l) }
-		a.HilAt(Operator, s.TokPos, len (s.Tok.String()))
+		a.hilAt(Operator, s.TokPos, len (s.Tok.String()))
 	}
 	for _, r := range s.Rhs { a.expr(r) }
 }
 
 func (a *Analyzer) sendStmt (s *ast.SendStmt) {
 	a.expr(s.Chan)
-	a.HilAt(Separator, s.Arrow, 2)
+	a.hilAt(Separator, s.Arrow, 2)
 	a.expr(s.Value)
 }
 
 func (a *Analyzer) rangeStmt (s *ast.RangeStmt) {
 	a.CurrLcl.With (func () {
-		a.HilAt(Keyword, s.For, 3)
+		a.hilAt(Keyword, s.For, 3)
 		a.declIdentExpr(s.Key)
 		if s.Value != nil { a.declIdentExpr(s.Value) }
 		a.hilAssn (s.Tok, s.TokPos)
@@ -287,62 +286,62 @@ func (a *Analyzer) rangeStmt (s *ast.RangeStmt) {
 
 func (a *Analyzer) blockStmt (e *ast.BlockStmt) {
 	if e != nil {
-		if e.Lbrace != 0 { a.HilAt(Token, e.Lbrace, 1) }
+		if e.Lbrace != 0 { a.hilAt(Token, e.Lbrace, 1) }
 		a.CurrLcl.With (func () {
 			for _, s := range e.List { a.stmt(s) }
 		})
-		if e.Rbrace != 0 { a.HilAt(Token, e.Rbrace, 1) }
+		if e.Rbrace != 0 { a.hilAt(Token, e.Rbrace, 1) }
 	}
 }
 
 func (a *Analyzer) returnStmt (s *ast.ReturnStmt) {
-	a.HilAt(Keyword, s.Return, 6)
+	a.hilAt(Keyword, s.Return, 6)
 	for _, v := range s.Results { a.expr(v) }
 }
 
 func (a *Analyzer) branchStmt (s *ast.BranchStmt) {
 	switch s.Tok {
-	case token.      BREAK: a.HilAt(Keyword, s.TokPos, 5)
-	case token.   CONTINUE: a.HilAt(Keyword, s.TokPos, 8)
-	case token.       GOTO: a.HilAt(Keyword, s.TokPos, 4)
-	case token.FALLTHROUGH: a.HilAt(Keyword, s.TokPos, 11)
+	case token.      BREAK: a.hilAt(Keyword, s.TokPos, 5)
+	case token.   CONTINUE: a.hilAt(Keyword, s.TokPos, 8)
+	case token.       GOTO: a.hilAt(Keyword, s.TokPos, 4)
+	case token.FALLTHROUGH: a.hilAt(Keyword, s.TokPos, 11)
 	}
-	if s.Label != nil { a.Hil(LblRef, s.Label) }
+	if s.Label != nil { a.hil(LblRef, s.Label) }
 }
 
 func (a *Analyzer) selectStmt (s *ast.SelectStmt) {
 	a.CurrLcl.With (func () {
-		a.HilAt(Keyword, s.Select, 6)
+		a.hilAt(Keyword, s.Select, 6)
 		a.blockStmt(s.Body)
 	})
 }
 
 func (a *Analyzer) switchStmt (s *ast.SwitchStmt) {
 	a.CurrLcl.With (func () {
-		a.HilAt(Keyword, s.Switch, 6)
+		a.hilAt(Keyword, s.Switch, 6)
 		if s.Init != nil { a.stmt(s.Init) }
 		if s.Tag  != nil { a.expr(s.Tag ) }
-		a.withFlags (func () { a.Set (inSimpleSwitch); a.blockStmt(s.Body)})
+		a.withFlags (func () { a.set (inSimpleSwitch); a.blockStmt(s.Body)})
 	})
 }
 
 func (a *Analyzer) typeSwitchStmt (s *ast.TypeSwitchStmt) {
 	a.CurrLcl.With (func () {
-		a.HilAt(Keyword, s.Switch, 6)
+		a.hilAt(Keyword, s.Switch, 6)
 		if s.Init != nil { a.stmt(s.Init) }
 		a.stmt(s.Assign)
-		a.withFlags (func () { a.Set (inTypeSwitch); a.blockStmt(s.Body)})
+		a.withFlags (func () { a.set (inTypeSwitch); a.blockStmt(s.Body)})
 	})
 }
 
 func (a *Analyzer) commClause (s *ast.CommClause) {
 	if s.Comm == nil {
-		a.HilAt(Keyword, s.Case, 7)
+		a.hilAt(Keyword, s.Case, 7)
 	} else {
-		a.HilAt(Keyword, s.Case, 4)
+		a.hilAt(Keyword, s.Case, 4)
 		a.stmt(s.Comm)
 	}
-	a.HilAt(Separator, s.Colon, 1)
+	a.hilAt(Separator, s.Colon, 1)
 	for _, s := range s.Body {
 		a.stmt(s)
 	}
@@ -350,26 +349,26 @@ func (a *Analyzer) commClause (s *ast.CommClause) {
 
 func (a *Analyzer) caseClause (s *ast.CaseClause) {
 	if s.List == nil {
-		a.HilAt(Keyword, s.Case, 7)
+		a.hilAt(Keyword, s.Case, 7)
 	} else {
-		a.HilAt(Keyword, s.Case, 4)
+		a.hilAt(Keyword, s.Case, 4)
 		for _, v := range s.List {
-			if (a.Has (inTypeSwitch)) {
+			if (a.has (inTypeSwitch)) {
 				a.typ (v)
 			} else {
 				a.expr(v)
 			}
 		}
 	}
-	a.HilAt(Separator, s.Colon, 1)
+	a.hilAt(Separator, s.Colon, 1)
 	for _, s := range s.Body {
-		a.withFlags (func () { a.Clear(inTypeSwitch + inSimpleSwitch); a.stmt(s) })
+		a.withFlags (func () { a.clear(inTypeSwitch + inSimpleSwitch); a.stmt(s) })
 	}
 }
 
 func (a *Analyzer) forStmt (s *ast.ForStmt) {
 	a.CurrLcl.With (func () {
-		a.HilAt(Keyword, s.For, 3)
+		a.hilAt(Keyword, s.For, 3)
 		if s.Init != nil { a.stmt(s.Init) }
 		if s.Cond != nil { a.expr(s.Cond) }
 		if s.Post != nil { a.stmt(s.Post) }
@@ -378,17 +377,17 @@ func (a *Analyzer) forStmt (s *ast.ForStmt) {
 }
 
 func (a *Analyzer) goStmt (s *ast.GoStmt) {
-	a.HilAt(Keyword, s.Go, 2)
+	a.hilAt(Keyword, s.Go, 2)
 	a.callExpr(s.Call)
 }
 
 func (a *Analyzer) deferStmt (s *ast.DeferStmt) {
-	a.HilAt(Keyword, s.Defer, 5)
+	a.hilAt(Keyword, s.Defer, 5)
 	a.callExpr(s.Call)
 }
 
 func (a *Analyzer) ifStmt (s *ast.IfStmt) {
-	a.HilAt(Keyword, s.If, 2)
+	a.hilAt(Keyword, s.If, 2)
 	if s.Init != nil { a.stmt(s.Init) }
 	a.expr(s.Cond)
 	a.blockStmt(s.Body)
@@ -399,7 +398,7 @@ func (a *Analyzer) ifStmt (s *ast.IfStmt) {
 
 func (a *Analyzer) expr (e ast.Expr) env.Mode {
 	if mode, ok := a.tryExpr(e); !ok {
-		a.Error(e.Pos(), e.End(), "invalid expression node")
+		a.error(e.Pos(), e.End(), "invalid expression node")
 		return a.typ(e)
 	} else {
 		return mode
@@ -409,9 +408,9 @@ func (a *Analyzer) expr (e ast.Expr) env.Mode {
 func (a *Analyzer) tryExpr (e ast.Expr) (env.Mode, bool) {
 	res := env.ModeNil
 	ok := true
-	a.WithNode (InExpr, e, func () {
+	a.withNode (InExpr, e, func () {
 		switch e := e.(type) {
-		case *ast.       BadExpr: a.Hil(Error, e); res = a.modeTab.Err
+		case *ast.       BadExpr: a.hil(Error, e); res = a.modeTab.Err
 		case *ast.         Ident: res = a.     identExpr(e)
 		case *ast.      CallExpr: res = a.      callExpr(e)
 		case *ast.      StarExpr: res = a.      starExpr(e)
@@ -434,19 +433,19 @@ func (a *Analyzer) tryExpr (e ast.Expr) (env.Mode, bool) {
 
 func (a *Analyzer) identExpr (id *ast.Ident) env.Mode {
     if d, any := a.CurrSearch.Find (names.Put(id.Name)); !any && d == nil {
-	a.NewError(id.Pos(), id.End(), "`" + id.Name + "' undefined")
+	a.newError(id.Pos(), id.End(), "`" + id.Name + "' undefined")
 	return a.modeTab.Err
     } else if d == nil {
-	a.Hil(VarRef, id)
+	a.hil(VarRef, id)
 	return a.modeTab.Any
     } else {
 	switch d.Kind {
- 	case env.KVar    : a.Hil(VarRef, id)
-	case env.KType   : a.Hil(TypRef, id)
-	case env.KFunc   : a.Hil(FunRef, id)
-	case env.KConst  : a.Hil(ConRef, id)
-	case env.KPackage: a.Hil(PkgRef, id)
-	default: a.Hil(Error, id)
+ 	case env.KVar    : a.hil(VarRef, id)
+	case env.KType   : a.hil(TypRef, id)
+	case env.KFunc   : a.hil(FunRef, id)
+	case env.KConst  : a.hil(ConRef, id)
+	case env.KPackage: a.hil(PkgRef, id)
+	default: a.hil(Error, id)
 	}
 	//fmt.Printf ("id=%s dMode=%s\n", id.Name, d.Mode.Repr())
 	return d.Mode
@@ -455,10 +454,10 @@ func (a *Analyzer) identExpr (id *ast.Ident) env.Mode {
 
 func (a *Analyzer) callExpr (e * ast.CallExpr) env.Mode {
 	fMode := a.expr(e.Fun)
-	a.HilAt(Token, e.Lparen, 1)
+	a.hilAt(Token, e.Lparen, 1)
 	if fMode == a.modeTab.Make {
 	   if len (e.Args) == 0 {
-     	       a.Error (e.Pos (), e.End (), "type argument required")
+     	       a.error (e.Pos (), e.End (), "type argument required")
 	   } else {
 		for i, arg := range e.Args {
 		    if i == 0 {
@@ -471,17 +470,17 @@ func (a *Analyzer) callExpr (e * ast.CallExpr) env.Mode {
 	} else {
 	   for _, arg := range e.Args { a.expr(arg) }
 	}
-	a.HilAt(Token, e.Rparen, 1)
+	a.hilAt(Token, e.Rparen, 1)
 	return a.modeTab.Err
 }
 
 func (a *Analyzer) starExpr (t *ast.StarExpr) env.Mode {
-	a.HilAt(Operator, t.Star, 1)
+	a.hilAt(Operator, t.Star, 1)
 	switch m := a.expr(t.X).(type) {
 	case *env.Ref: return m.Mode
 	default:
 		if !env.MAny (m) {
-			a.Error (t.X.Pos (), t.X.End (), "pointer type required")
+			a.error (t.X.Pos (), t.X.End (), "pointer type required")
 		}
 		return a.modeTab.Err
 	}
@@ -489,26 +488,26 @@ func (a *Analyzer) starExpr (t *ast.StarExpr) env.Mode {
 
 func (a *Analyzer) indexExpr (e *ast.IndexExpr) env.Mode {
 	a.expr(e.X)
-	a.HilAt(Token, e.Lbrack, 1)
+	a.hilAt(Token, e.Lbrack, 1)
 	a.expr(e.Index)
-	a.HilAt(Token, e.Rbrack, 1)
+	a.hilAt(Token, e.Rbrack, 1)
 	return a.modeTab.Err
 }
 
 func (a *Analyzer) sliceExpr (e *ast.SliceExpr) env.Mode {
 	a.expr(e.X)
-	a.HilAt(Token, e.Lbrack, 1)
+	a.hilAt(Token, e.Lbrack, 1)
 	if e.Low  != nil { a.expr(e.Low ) }
 	if e.High != nil { a.expr(e.High) }
 	if e.Max  != nil { a.expr(e.Max ) }
-	a.HilAt(Token, e.Rbrack, 1)
+	a.hilAt(Token, e.Rbrack, 1)
 	return a.modeTab.Err
 }
 
 func (a *Analyzer) parenExpr (e *ast.ParenExpr) env.Mode {
-	a.HilAt(Token, e.Lparen, 1)
+	a.hilAt(Token, e.Lparen, 1)
 	a.expr(e.X)
-	a.HilAt(Token, e.Rparen, 1)
+	a.hilAt(Token, e.Rparen, 1)
 	return a.modeTab.Err
 }
 
@@ -525,12 +524,12 @@ func (a *Analyzer) selectorExpr (e *ast.SelectorExpr) env.Mode {
 		a.withEnv(m.Flds, func () { res = a.expr(e.Sel) })
 	case *env.Builtin:
 		if *m != env.KErr && *m != env.KAny {
-			a.Error(e.X.Pos(), e.X.End(), "struct type required instead of '" + m.Head() + "'")
+			a.error(e.X.Pos(), e.X.End(), "struct type required instead of '" + m.Head() + "'")
 		}
 		a.withEnv(env.Any, func () { a.expr(e.Sel) })
 		res = a.modeTab.Err
 	default:
-		a.Error(e.X.Pos(), e.X.End(), "struct type required instead of '" + m.Head () + "'")
+		a.error(e.X.Pos(), e.X.End(), "struct type required instead of '" + m.Head () + "'")
 		a.withEnv(env.Any, func () { a.expr(e.Sel) })
 		res = a.modeTab.Err
 	}
@@ -539,28 +538,28 @@ func (a *Analyzer) selectorExpr (e *ast.SelectorExpr) env.Mode {
 
 func (a *Analyzer) keyValueExpr (e *ast.KeyValueExpr) env.Mode {
 	a.expr(e.Key)
-	a.HilAt(Separator, e.Colon, 1)
+	a.hilAt(Separator, e.Colon, 1)
 	a.expr(e.Value)
 	return a.modeTab.Err
 }
 
 func (a *Analyzer) typeAssertExpr (e *ast.TypeAssertExpr) env.Mode {
 	a.expr(e.X)
-	a.HilAt(Token, e.Lparen, 1)
+	a.hilAt(Token, e.Lparen, 1)
 	a.typ (e.Type)
-	a.HilAt(Token, e.Rparen, 1)
+	a.hilAt(Token, e.Rparen, 1)
 	return a.modeTab.Err
 }
 
 func (a *Analyzer) unaryExpr (e *ast.UnaryExpr) env.Mode {
-	a.HilAt(Unary, e.OpPos, len(e.Op.String()))
+	a.hilAt(Unary, e.OpPos, len(e.Op.String()))
 	a.expr(e.X)
 	return a.modeTab.Err
 }
 
 func (a *Analyzer) binaryExpr (e *ast.BinaryExpr) env.Mode {
 	a.expr(e.X)
-	a.HilAt(Binary, e.OpPos, len(e.Op.String()))
+	a.hilAt(Binary, e.OpPos, len(e.Op.String()))
 	a.expr(e.Y)
 	return a.modeTab.Err
 }
@@ -573,20 +572,20 @@ func (a *Analyzer) funcLit (f *ast.FuncLit) env.Mode {
 
 func (a *Analyzer) basicLit (c *ast.BasicLit) env.Mode {
 	switch c.Kind {
-	case token.STRING: a.Hil(String   , c); return a.modeTab.String
-	case token.  CHAR: a.Hil(Char     , c); return a.modeTab.Int
-	case token.   INT: a.Hil(Number   , c); return a.modeTab.Int
-	case token. FLOAT: a.Hil(Number   , c); return a.modeTab.Float64
-	case token.  IMAG: a.Hil(Number   , c); return a.modeTab.Complex128
+	case token.STRING: a.hil(String   , c); return a.modeTab.String
+	case token.  CHAR: a.hil(Char     , c); return a.modeTab.Int
+	case token.   INT: a.hil(Number   , c); return a.modeTab.Int
+	case token. FLOAT: a.hil(Number   , c); return a.modeTab.Float64
+	case token.  IMAG: a.hil(Number   , c); return a.modeTab.Complex128
 	}
 	return a.modeTab.Err
 }
 
 func (a *Analyzer) compositeLit (e *ast.CompositeLit) env.Mode {
 	a.typ (e.Type)
-	a.HilAt(Token, e.Lbrace, 1)
+	a.hilAt(Token, e.Lbrace, 1)
 	for _, elt := range e.Elts { a.expr(elt) }
-	a.HilAt(Token, e.Rbrace, 1)
+	a.hilAt(Token, e.Rbrace, 1)
 	return a.modeTab.Err
 }
 
@@ -594,7 +593,7 @@ func (a *Analyzer) compositeLit (e *ast.CompositeLit) env.Mode {
 
 func (a *Analyzer) typ (t ast.Expr) env.Mode {
 	if m, ok := a.tryType(t); !ok {
-		a.Error(t.Pos(), t.End(), "invalid type node")
+		a.error(t.Pos(), t.End(), "invalid type node")
 		return a.expr(t)
 	} else {
 		return m
@@ -604,10 +603,10 @@ func (a *Analyzer) typ (t ast.Expr) env.Mode {
 func (a *Analyzer) tryType (t ast.Expr) (env.Mode, bool) {
 	res := env.ModeNil
 	ok := true;
-	a.WithNode (InType, t, func () {
+	a.withNode (InType, t, func () {
 		switch t := t.(type) {
 		case *ast.        Ident: res = a.    identType(t)
-		case *ast.      BadExpr: a.  Hil(Error,  t); res = a.modeTab.Err
+		case *ast.      BadExpr: a.hil(Error,  t); res = a.modeTab.Err
 		case *ast.      MapType: res = a.      mapType(t)
 		case *ast.     StarExpr: res = a.     starType(t)
 		case *ast.     FuncType: res = a.     funcType(t)
@@ -625,47 +624,47 @@ func (a *Analyzer) tryType (t ast.Expr) (env.Mode, bool) {
 
 func (a *Analyzer) identType (id *ast.Ident) env.Mode {
     if d, any := a.CurrSearch.Find (names.Put(id.Name)); !any && d == nil {
-	a.Error(id.Pos(), id.End(), "type `" + id.Name + "' undefined")
+	a.error(id.Pos(), id.End(), "type `" + id.Name + "' undefined")
 	return a.modeTab.Err
     } else if d == nil {
-	a.  Hil(TypRef, id)
+	a.hil(TypRef, id)
 	return a.modeTab.Err
     } else {
 	switch d.Kind {
- 	case env.KVar    : a.Hil(VarRef, id)
-	case env.KType   : a.Hil(TypRef, id)
-	case env.KFunc   : a.Hil(FunRef, id)
-	case env.KConst  : a.Hil(ConRef, id)
-	case env.KPackage: a.Hil(PkgRef, id)
-	default: a.Hil(Error, id)
+ 	case env.KVar    : a.hil(VarRef, id)
+	case env.KType   : a.hil(TypRef, id)
+	case env.KFunc   : a.hil(FunRef, id)
+	case env.KConst  : a.hil(ConRef, id)
+	case env.KPackage: a.hil(PkgRef, id)
+	default: a.hil(Error, id)
 	}
 	if d.Kind != env.KType && d.Kind != env.KPackage {
-		a.Error(id.Pos(), id.End(), "type ident required")
+		a.error(id.Pos(), id.End(), "type ident required")
 	}
 	return d.Mode
     }
 }
 
 func (a *Analyzer) ellipsisType (t *ast.Ellipsis) env.Mode {
-	a.HilAt(Token, t.Ellipsis, 3)
+	a.hilAt(Token, t.Ellipsis, 3)
 	a.typ(t.Elt)
 	return a.modeTab.Err
 }
 
 func (a *Analyzer) starType (t *ast.StarExpr) env.Mode {
-	a.HilAt(Operator, t.Star, 1)
+	a.hilAt(Operator, t.Star, 1)
 	m := a.typ(t.X)
 	return a.modeTab.Ref (m)
 }
 
 func (a *Analyzer) chanType (t *ast.ChanType) env.Mode {
 	if t.Arrow == token.NoPos || t.Begin < t.Arrow {
-	  a.HilAt(Keyword, t.Begin, 4)
+	  a.hilAt(Keyword, t.Begin, 4)
 	  if  t.Arrow != token.NoPos {
-	    a.HilAt(Separator, t.Arrow, 2)
+	    a.hilAt(Separator, t.Arrow, 2)
 	  }
 	} else {
-	  a.HilAt(Separator, t.Begin, 2)
+	  a.hilAt(Separator, t.Begin, 2)
 	}
 	a.typ(t.Value)
 	return a.modeTab.Err
@@ -679,14 +678,14 @@ func (a *Analyzer) selectorType (t *ast.SelectorExpr) env.Mode {
 }
 
 func (a *Analyzer) funcType (t *ast.FuncType) env.Mode {
-	a.HilAt(Keyword, t.Func, 4)
+	a.hilAt(Keyword, t.Func, 4)
 	a.fieldList(t.Params)
 	a.fieldList(t.Results)
 	return a.modeTab.Err
 }
 
 func (a *Analyzer) structType (t *ast.StructType) env.Mode {
-	a.HilAt(Keyword, t.Struct, 6)
+	a.hilAt(Keyword, t.Struct, 6)
 	bldr := env.NewBldr ()
 	a.withEnvDecl (bldr, func () {
 		a.fieldList(t.Fields)
@@ -695,13 +694,13 @@ func (a *Analyzer) structType (t *ast.StructType) env.Mode {
 }
 
 func (a *Analyzer) interfaceType (t *ast.InterfaceType) env.Mode {
-	a.HilAt(Keyword, t.Interface, 9)
+	a.hilAt(Keyword, t.Interface, 9)
 	a.fieldList(t.Methods)
 	return a.modeTab.Err
 }
 
 func (a *Analyzer) arrayType (t *ast.ArrayType) env.Mode {
-	a.HilAt(Token, t.Lbrack, 1)
+	a.hilAt(Token, t.Lbrack, 1)
 	var size *int = nil
 	if t.Len != nil { /*sizeV := a.expr(t.Len); size = &sizeV*/ } // TODO: size
 	elem := a.typ(t.Elt)
@@ -709,7 +708,7 @@ func (a *Analyzer) arrayType (t *ast.ArrayType) env.Mode {
 }
 
 func (a *Analyzer) mapType (t *ast.MapType) env.Mode {
-	a.HilAt(Keyword, t.Map, 3)
+	a.hilAt(Keyword, t.Map, 3)
 	a.typ(t.Key)
 	a.typ(t.Value)
 	return a.modeTab.Err
@@ -727,12 +726,12 @@ func (a *Analyzer) declare (k env.Kind, n *names.Name, t ast.Expr, m env.Mode, v
 }
 
 func (a *Analyzer) decl (d ast.Decl) {
-	a.WithNode (InDecl, d, func () {
+	a.withNode (InDecl, d, func () {
 		switch d := d.(type) {
-		case *ast. BadDecl: a.Hil(Error, d)
+		case *ast. BadDecl: a.hil(Error, d)
 		case *ast. GenDecl: a. genDecl(d)
 		case *ast.FuncDecl: a.funcDecl(d)
-		default: if d != nil { a.Error(d.Pos(), d.End(), "unknown decl node") }
+		default: if d != nil { a.error(d.Pos(), d.End(), "unknown decl node") }
 		}
 	})
 }
@@ -741,30 +740,30 @@ func (a *Analyzer) funcDecl (d *ast.FuncDecl) {
 	// make types
 	//a.FuncType(d.Type)
 	//if d.Recv != nil { a.FieldList(d.Recv) }
-	a.Hil(FunDef, d.Name)
+	a.hil(FunDef, d.Name)
 	a.declare(env.KFunc, names.Put(d.Name.Name), d.Type, a.modeTab.Any, d)
 }
 
 func (a *Analyzer) genDecl (d *ast.GenDecl) {
 	switch d.Tok {
-	case token.IMPORT: a.HilAt(Keyword, d.Pos(), 6)
-	case token.CONST : a.HilAt(Keyword, d.Pos(), 5)
-	case token.TYPE  : a.HilAt(Keyword, d.Pos(), 4)
-	case token.VAR   : a.HilAt(Keyword, d.Pos(), 3)
+	case token.IMPORT: a.hilAt(Keyword, d.Pos(), 6)
+	case token.CONST : a.hilAt(Keyword, d.Pos(), 5)
+	case token.TYPE  : a.hilAt(Keyword, d.Pos(), 4)
+	case token.VAR   : a.hilAt(Keyword, d.Pos(), 3)
 	}
 
-	if d.Lparen != 0 { a.HilAt(Token, d.Lparen, 1) }
+	if d.Lparen != 0 { a.hilAt(Token, d.Lparen, 1) }
 
 	for _, s := range d.Specs {
 		switch s := s.(type) {
 		case *ast.ImportSpec: a.importSpec(s)
 		case *ast. ValueSpec: a. valueSpec(s)
 		case *ast.  TypeSpec: a.  typeSpec(s)
-		default: if s != nil { a.Error(s.Pos(), s.End(), "unknown spec node") }
+		default: if s != nil { a.error(s.Pos(), s.End(), "unknown spec node") }
 		}
 	}
 
-	if d.Rparen != 0 { a.HilAt(Token, d.Rparen, 1) }
+	if d.Rparen != 0 { a.hilAt(Token, d.Rparen, 1) }
 }
 
 func (a *Analyzer) field (f *ast.Field) {
@@ -772,21 +771,21 @@ func (a *Analyzer) field (f *ast.Field) {
 	for _, id := range f.Names {
 		a.CurrLcl.Declare(env.KVar, names.Put(id.Name), a.path, f.Type, m, nil)
 		//fmt.Println (id)
-		a.Hil (VarDef, id)
+		a.hil (VarDef, id)
 	}
 	//fmt.Println(f.Type)
 	//ast.Fprint(os.Stdout, nil, f, nil)
 	if f.Tag != nil { a.basicLit (f.Tag) }
-	if f.Comment != nil { a.Hil (Comment, f.Comment) }
+	if f.Comment != nil { a.hil (Comment, f.Comment) }
 }
 
 func (a *Analyzer) fieldList (fl *ast.FieldList) {
 	if fl != nil {
-		if fl.Opening != 0 { a.HilAt(Token, fl.Opening, 1) }
+		if fl.Opening != 0 { a.hilAt(Token, fl.Opening, 1) }
 		for _, f := range fl.List {
 			a.field(f)
 		}
-		if fl.Closing != 0 { a.HilAt(Token, fl.Closing, 1) }
+		if fl.Closing != 0 { a.hilAt(Token, fl.Closing, 1) }
 	}
 }
 
@@ -794,51 +793,51 @@ func (a *Analyzer) fieldList (fl *ast.FieldList) {
 
 func (a *Analyzer) importSpec (imp *ast.ImportSpec) {
 	if imp.Name != nil {
-		a.Hil (PkgDef, imp.Name)
+		a.hil (PkgDef, imp.Name)
 		a.declare(env.KPackage, names.Put(imp.Name.Name), nil, a.modeTab.Any, imp)
 	} else {
 		p, err := strconv.Unquote(imp.Path.Value)
 		if err != nil {
-			a.Error(imp.Path.Pos(), imp.Path.End(), "invalid path syntax")
+			a.error(imp.Path.Pos(), imp.Path.End(), "invalid path syntax")
 		} else {
 			a.declare(env.KPackage, names.Put (path.Base(p)), nil, a.modeTab.Any, imp) // TODO: get file name
 		}
 	}
 	a.basicLit(imp.Path)
-	if imp.Comment != nil { a.Hil (Comment, imp.Comment) }
+	if imp.Comment != nil { a.hil (Comment, imp.Comment) }
 }
 
 func (a *Analyzer) valueSpec (v *ast.ValueSpec) {
 	for i, id := range v.Names {
-		a.Hil (ValDef, id)
+		a.hil (ValDef, id)
 		if v.Values == nil {
 			a.declare(env.KConst, names.Put(id.Name), v.Type, a.modeTab.Any, nil)
 		} else {
 			a.declare(env.KConst, names.Put(id.Name), v.Type, a.modeTab.Any, v.Values[i])
 		}
 	}
-	if v.Comment != nil { a.Hil (Comment, v.Comment) }
+	if v.Comment != nil { a.hil (Comment, v.Comment) }
 }
 
 func (a *Analyzer) typeSpec (t *ast.TypeSpec) {
-	a.Hil (TypDef, t.Name)
+	a.hil (TypDef, t.Name)
 	a.declare(env.KType, names.Put(t.Name.Name), t.Type, a.modeTab.Any, nil)
 
-	if t.Comment != nil { a.Hil (Comment, t.Comment) }
+	if t.Comment != nil { a.hil (Comment, t.Comment) }
 }
 
 //===================================================================
 
-func (a *Analyzer) AnalyzeFileIntr (f *ast.File) {
+func (a *Analyzer) analyzeFileIntr (f *ast.File) {
 	a.CurrGbl = env.NewBldr()
 	a.CurrGbl.Nested (a.modeTab.BEnv)
 	a.CurrLcl = env.NewBldr()
 	a.CurrSearch = a.CurrLcl
-	a.HilAt (Keyword, f.Package, 7)
-	a.Hil   (PkgDef , f.Name)
+	a.hilAt (Keyword, f.Package, 7)
+	a.hil   (PkgDef , f.Name)
 	a.declare (env.KPackage, names.Put(f.Name.Name), nil, a.modeTab.Any, nil)
-	if f.Doc != nil { a.Hil (Comment, f.Doc) }
- 	for _, c    := range f.Comments   { a.Hil   (Comment, c) }
+	if f.Doc != nil { a.hil (Comment, f.Doc) }
+ 	for _, c    := range f.Comments   { a.hil   (Comment, c) }
 	for _, decl := range f.Decls      { a.decl (decl) }
 	a.gbl = a.CurrGbl.Close()
 	a.CurrLcl.Nested (a.gbl)
@@ -847,7 +846,7 @@ func (a *Analyzer) AnalyzeFileIntr (f *ast.File) {
 
 //-----------------------------------------------------------------
 
-func (a *Analyzer) AnalyzeFileBody (f *ast.File) {
+func (a *Analyzer) analyzeFileBody (f *ast.File) {
 	a.CurrLcl = env.NewBldr ()
 	a.CurrGbl = a.CurrLcl
 	a.CurrGbl.Nested(a.lcl)
@@ -890,8 +889,8 @@ func (a *Analyzer) AnalyzeFileBody (f *ast.File) {
 	scan (func (d *env.Decl) bool { return  d.Kind == env.KVar   })
 	scan (func (d *env.Decl) bool { return  d.Kind == env.KFunc  })
 
-	//for _, decl := range f.Decls      { a.Decl (decl) }
- 	//for _, id   := range f.Unresolved { a.Hil   (Error, id)  }
+	//for _, decl := range f.Decls      { a.decl (decl) }
+ 	//for _, id   := range f.Unresolved { a.hil   (Error, id)  }
 }
 
 //===================================================================
@@ -904,30 +903,14 @@ func (a *Analyzer) SetOuterErrors (e scanner.ErrorList) {
 			length = len (err.Msg) - len (prefix)
 		}
 		pos := a.file.Pos(err.Pos.Offset)
-		a.Error (pos, token.Pos (int (pos)+length), err.Msg)
+		a.error (pos, token.Pos (int (pos)+length), err.Msg)
 	}
 }
 
 //===================================================================
 
-func (a *Analyzer) SetTokenFile (file *token.File) {
-	a.file = file
-}
-
-//===================================================================
-
 func (a *Analyzer) Analyze (file *token.File, f *ast.File) {
-	a.SetTokenFile(file)
-	a.AnalyzeFileIntr(f)
-	a.AnalyzeFileBody(f)
-}
-
-//===================================================================
-
-func (a *Analyzer) GetErrors (fname string, no int) *results.Errors {
-	return &results.Errors {fname, no, a.errs}
-}
-
-func (a *Analyzer) GetFonts (fname string, bname string, no int) *results.Fontify {
-	return &results.Fontify{fname, bname, no, 0, a.file.Size(), a.hils}
+	a.file = file
+	a.analyzeFileIntr(f)
+	a.analyzeFileBody(f)
 }

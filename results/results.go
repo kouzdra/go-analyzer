@@ -40,6 +40,22 @@ type Errors struct {
 	Errors []Error
 }
 
+type Errs struct {
+	errs []Error
+}
+
+func NewErrs () Errs {
+	return Errs{make([]Error, 0, 10)}
+}
+
+func (errs *Errs) Add (lvl string, beg, end int, msg string) {
+	errs.errs = append (errs.errs, Error{lvl, beg, end, msg})
+}
+
+func (errs *Errs) GetErrors (fname string, no int) *Errors {
+	return &Errors {fname, no, errs.errs}
+}
+
 func (errs Errors) Write(out *writer.Writer) {
 	out.Beg ("ERRORS").Write(errs.FName).Sep().WriteInt(errs.No).Eol()
 	for _, err := range errs.Errors {
@@ -57,6 +73,23 @@ type FontMarker struct {
 	Color string
 	Beg int
 	End int
+}
+
+
+type Hils struct {
+	hils []FontMarker
+}
+
+func NewHils () Hils {
+	return Hils{make([]FontMarker, 0, 10000)}
+}
+
+func (hils *Hils) Add (color string, beg, end int) {
+	hils.hils = append(hils.hils, FontMarker{color, beg, end})
+}
+
+func (hils *Hils) GetFonts (fname string, bname string, no int, beg, end int) *Fontify {
+	return &Fontify{fname, bname, no, beg, end, hils.hils}
 }
 
 type Fontify struct {

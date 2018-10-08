@@ -231,12 +231,10 @@ func (p *prj) Analyze (src iproject.ISource, no int) (*results.Errors, *results.
 	a := analyzer.New(p, true)
 	fName := src.GetFile().Name()
 	//a.Analyze(src.Ast)
-	a.SetTokenFile (src.GetFile())
 	a.SetOuterErrors (src.GetOuterErrors())
-	a.AnalyzeFileIntr(src.GetAst())
-	a.AnalyzeFileBody(src.GetAst())
+	a.Analyze (src.GetFile(), src.GetAst())///
 	//a.Curr.Print()
-	return a.GetErrors (fName, no), a.GetFonts (fName, fName, no)
+	return a.Errs.GetErrors (fName, no), a.Hils.GetFonts (fName, fName, no, 0, src.GetFile().Size())
 }
 
 //-------------------------------------------------------------------
