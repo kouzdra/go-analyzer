@@ -17,7 +17,7 @@ import "github.com/kouzdra/go-analyzer/results"
 //import "github.com/kouzdra/go-analyzer/options"
 import "github.com/kouzdra/go-analyzer/iface/iproject"
 
-type prj struct {
+type project struct {
 	context build.Context
 	dirs [] *names.Name
 	tree [] iproject.IDir
@@ -28,13 +28,13 @@ type prj struct {
 
 //--------------------------------------------------
 
-func (p *prj) GetContext () build.Context { return p.context }
-func (p *prj) GetTree    () []iproject.IDir { return p.tree }
-func (p *prj) GetFileSet () *token.FileSet { return p.fileSet }
-func (p *prj) GetModeTab () *env.ModeTab { return p.modeTab }
+func (p *project) GetContext () build.Context { return p.context }
+func (p *project) GetTree    () []iproject.IDir { return p.tree }
+func (p *project) GetFileSet () *token.FileSet { return p.fileSet }
+func (p *project) GetModeTab () *env.ModeTab { return p.modeTab }
 
-func (pr *prj) GetDirs     () []*names.Name { return pr.dirs; }
-func (pr *prj) GetPackages () map [*names.Name] iproject.IPackage{ return pr.packages; }
+func (pr *project) GetDirs     () []*names.Name { return pr.dirs; }
+func (pr *project) GetPackages () map [*names.Name] iproject.IPackage{ return pr.packages; }
 
 //--------------------------------------------------
 
@@ -49,42 +49,42 @@ func (d *dir) GetSub  () [] iproject.IDir      { return d.sub  }
 //--------------------------------------------------
 
 func NewProject() iproject.IProject {
-	return &prj{context:build.Default, fileSet:token.NewFileSet(), modeTab:env.NewModeTab ()}
+	return &project{context:build.Default, fileSet:token.NewFileSet(), modeTab:env.NewModeTab ()}
 }
 
 //---------------------------------------------------
 
-func (p *prj) SetRoot (path string) {
+func (p *project) SetRoot (path string) {
 	p.MsgF ("ROOT=%s", path)
 	p.context.GOROOT = path
 }
 ///
-func (p *prj) SetPath (path string) {
+func (p *project) SetPath (path string) {
 	p.MsgF ("PATH=%s", path)
 	p.context.GOPATH = path
 }
 
-func (p *prj) GetRoot () *names.Name {
+func (p *project) GetRoot () *names.Name {
 	return names.Put(p.context.GOROOT)
 }
 
-func (p *prj) GetPath () *names.Name {
+func (p *project) GetPath () *names.Name {
 	return names.Put(p.context.GOPATH)
 }
 
-func (s *prj) Msg (msg string) {
+func (s *project) Msg (msg string) {
 	log.Printf ("PRJ: %s", msg)
 	//results.Message{msg}.Write(s.Writer)
 }
 
-func (s *prj) MsgF (f string, args... interface{}) {
+func (s *project) MsgF (f string, args... interface{}) {
 	log.Printf ("PRJ: %s", fmt.Sprintf (f, args...))
 	//results.Message{fmt.Sprintf (f, args...)}.Write(s.Writer)
 }
 
 //-------------------------------------------------------------------
 
-func (p *prj) makeSubDirs (dest []*names.Name, rootPath *names.Name,
+func (p *project) makeSubDirs (dest []*names.Name, rootPath *names.Name,
 	rootName *names.Name, tree [] iproject.IDir) ([]*names.Name, [] iproject.IDir) {
 	dest = append (dest, rootPath)
 	//fmt.Printf ("File: [%s]\n", root)
@@ -98,7 +98,7 @@ func (p *prj) makeSubDirs (dest []*names.Name, rootPath *names.Name,
 	return dest, append (tree, &dir{rootPath, subTree})
 }
 
-func (p *prj) makePackage (bpkg *build.Package) iproject.IPackage {
+func (p *project) makePackage (bpkg *build.Package) iproject.IPackage {
 	name := names.Put (bpkg.Dir)
 	pkg := p.GetPackages() [name]
 	if pkg == nil {
@@ -112,7 +112,7 @@ func (p *prj) makePackage (bpkg *build.Package) iproject.IPackage {
 	return pkg
 }
 
-func  (p *prj) makeDirs () {
+func  (p *project) makeDirs () {
 	dirs := make ([]*names.Name, 0, 100)
 	tree := make ([]iproject.IDir, 0)
 	for _, dir := range p.context.SrcDirs () {
@@ -124,7 +124,7 @@ func  (p *prj) makeDirs () {
 	p.tree = tree
 }
 
-func  (p *prj) makePackages () {
+func  (p *project) makePackages () {
 	p.packages = make (map[*names.Name]iproject.IPackage)
 	for _, dir := range p.GetDirs() {
 		pkg, err := p.context.ImportDir (dir.Name, 0)
@@ -136,7 +136,7 @@ func  (p *prj) makePackages () {
 
 //-------------------------------------------------------------------
 
-func (p *prj) Load () {
+func (p *project) Load () {
 	p.makeDirs ()
 	p.makePackages()
 	/*for _, pkg := range p.Pkgs {
@@ -150,7 +150,7 @@ func (p *prj) Load () {
 
 //-------------------------------------------------------------------
 
-func (p *prj) GetSrc (fname string) (iproject.ISource, error) {
+func (p *project) GetSrc (fname string) (iproject.ISource, error) {
 	dir, name := filepath.Split (fname)
 	dir = path.Clean(dir)
 	if pkg := p.GetPackages() [names.Put (dir)]; pkg != nil {
@@ -202,7 +202,7 @@ func (p *CompleteProc) Before (n ast.Node) bool {
 	return true
 }
 
-func (p *prj) Complete (src iproject.ISource, pos defs.Pos) *results.Completion {
+func (p *project) Complete (src iproject.ISource, pos defs.Pos) *results.Completion {
 	src.(*source).updateAst()
 	a := NewAnalyzer(p, src, false)
 	completeProcessor := CompleteProc{nil, Processor{a}, token.Pos(a.src.GetFile().Base () + int (pos))}
@@ -213,18 +213,18 @@ func (p *prj) Complete (src iproject.ISource, pos defs.Pos) *results.Completion 
 
 //-------------------------------------------------------------------
 
-func (p *prj) Analyze (src iproject.ISource, no int) (*results.Errors, *results.Fontify) {
-	pkgGo := src.GetPackage().(*pkg)
-	pkgGo.updateAsts ()
+func (p *project) Analyze (src iproject.ISource, no int) (*results.Errors, *results.Fontify) {
+	pkg := src.(*source).pkg
+	pkg.updateAsts ()
 	//src.updateAst()
 	
 	if false {
-		fmt.Printf ("imports of package [%s]\n", pkgGo.GetName ().Name);
-		for _, name := range pkgGo.GetPackage ().Imports {
+		fmt.Printf ("imports of package [%s]\n", pkg.GetName ().Name);
+		for _, name := range pkg.GetPackage ().Imports {
 			fmt.Printf ("  Import [%s]\n", name);
 		}
-		fmt.Printf ("Files of package [%s]\n", pkgGo.GetName ().Name);
-		for _, name := range pkgGo.GetPackage ().GoFiles {
+		fmt.Printf ("Files of package [%s]\n", pkg.GetName ().Name);
+		for _, name := range pkg.GetPackage ().GoFiles {
 			fmt.Printf ("  File [%s]\n", name);
 		}
 	}
@@ -238,7 +238,7 @@ func (p *prj) Analyze (src iproject.ISource, no int) (*results.Errors, *results.
 
 //-------------------------------------------------------------------
 
-func (p *prj) FindFiles (no int, pfx string, system bool, max int) *results.Files {
+func (p *project) FindFiles (no int, pfx string, system bool, max int) *results.Files {
 	files := results.Files{system, make([]string, 0, 1000)}
 	for _, pkg := range p.GetPackages () {
 		for _, f := range pkg.GetSrcs () {

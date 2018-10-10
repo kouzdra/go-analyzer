@@ -13,7 +13,7 @@ import "github.com/kouzdra/go-analyzer/names"
 import "github.com/kouzdra/go-analyzer/iface/iproject"
 
 type source struct {
-	pkg iproject.IPackage
+	pkg *packag
 	dir  *names.Name
 	name *names.Name
 	actual bool
@@ -39,7 +39,7 @@ func (s *source) GetInnerErrors () []results.Error   { return s.innerErrors; }
 //-------------------------------------------------------
 
 func NewSource (pkg iproject.IPackage, dir *names.Name, name *names.Name) *source {
-	return &source{pkg, dir, name, false, "", nil, nil, nil, nil}
+	return &source{pkg.(*packag), dir, name, false, "", nil, nil, nil, nil}
 }
 
 func (src *source) FName () string {
@@ -100,7 +100,7 @@ func (src *source) Changed (pos int, end int, newText string) {
 
 func (src *source) reParse () (*token.File, *ast.File, scanner.ErrorList) {
 	//src.Changed(3, 4, "a")
-	fset := src.GetPackage().GetProject ().(*prj).GetFileSet()
+	fset := src.GetPackage().GetProject ().(*project).GetFileSet()
 	base := token.Pos(fset.Base())
 	ast, err := parser.ParseFile (fset, src.FName(), src.GetText(), parser.ParseComments)
 	file := fset.File(base)

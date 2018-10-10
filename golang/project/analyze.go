@@ -111,7 +111,7 @@ func newAnalyzer(ker *ker, fileSet *token.FileSet, collect  bool) *Analyzer {
 }
 
 func NewAnalyzer(p iproject.IProject, src iproject.ISource, collect  bool) *Analyzer {
-	return newAnalyzer (newKer (p.(*prj).GetModeTab (), src.(*source)), p.(*prj).GetFileSet(), collect)
+	return newAnalyzer (newKer (p.(*project).GetModeTab (), src.(*source)), p.(*project).GetFileSet(), collect)
 }
 
 func (a *Analyzer) withEnv (e *env.Env, fn func ()) {
