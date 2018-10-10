@@ -11,10 +11,10 @@ import "go/scanner"
 //import "github.com/kouzdra/go-analyzer/writer"
 import "github.com/kouzdra/go-analyzer/results"
 import "github.com/kouzdra/go-analyzer/env"
+import "github.com/kouzdra/go-analyzer/defs"
 import "github.com/kouzdra/go-analyzer/names"
 import "github.com/kouzdra/go-analyzer/paths"
 //import "github.com/kouzdra/go-analyzer/golang/project"
-import "github.com/kouzdra/go-analyzer/iface/ianalyzer"
 import "github.com/kouzdra/go-analyzer/iface/iproject"
 
 const (
@@ -111,7 +111,7 @@ func new(ker *ker, fileSet *token.FileSet, collect  bool) *Analyzer {
 	return &res
 }
 
-func New(p iproject.IProject, src iproject.ISource, collect  bool) ianalyzer.IAnalyzer {
+func New(p iproject.IProject, src iproject.ISource, collect  bool) *Analyzer {
 	return new (newKer (p.GetModeTab (), src), p.GetFileSet(), collect)
 }
 
@@ -147,12 +147,12 @@ func (a *Analyzer) posValid(p token.Pos) bool {
 	return beg <= p && p <= end
 }
 
-func (a *Analyzer) offset (p token.Pos) int {
+func (a *Analyzer) offset (p token.Pos) defs.Pos {
 	beg := token.Pos(                a.file.Base())
 	end := token.Pos(a.file.Base() + a.file.Size())
 	if p < beg { p = beg }
 	if p > end { p = end }
-	return a.file.Offset(p)
+	return defs.Pos (a.file.Offset(p))
 }
 
 func (a *Analyzer) hil (color string, n ast.Node) *Analyzer {

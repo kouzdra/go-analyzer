@@ -1,7 +1,7 @@
 package results
 
+import "github.com/kouzdra/go-analyzer/defs"
 import "github.com/kouzdra/go-analyzer/writer"
-import "go/token"
 
 type Result interface {
 	Write(out *writer.Writer)
@@ -29,8 +29,7 @@ const (
 
 type Error struct {
 	Lvl string
-	Beg int
-	End int
+	Rng defs.Rng
 	Msg string
 }
 
@@ -48,8 +47,8 @@ func NewErrs () Errs {
 	return Errs{make([]Error, 0, 10)}
 }
 
-func (errs *Errs) Add (lvl string, beg, end int, msg string) {
-	errs.errs = append (errs.errs, Error{lvl, beg, end, msg})
+func (errs *Errs) Add (lvl string, beg, end defs.Pos, msg string) {
+	errs.errs = append (errs.errs, Error{lvl, defs.NewRng (beg, end), msg})
 }
 
 func (errs *Errs) GetErrors (fname string, no int) *Errors {
@@ -60,8 +59,7 @@ func (errs Errors) Write(out *writer.Writer) {
 	out.Beg ("ERRORS").Write(errs.FName).Sep().WriteInt(errs.No).Eol()
 	for _, err := range errs.Errors {
 		out.Put("  ").Put(err.Lvl).Sep().
-			WriteInt(err.Beg).Sep().
-			WriteInt(err.End).Sep().
+			WriteRng(err.Rng).Sep().
 			Write(err.Msg).Eol()
 	}
 	out.End ("ERRORS")
@@ -71,8 +69,7 @@ func (errs Errors) Write(out *writer.Writer) {
 
 type FontMarker struct {
 	Color string
-	Beg int
-	End int
+	Rng defs.Rng
 }
 
 
@@ -84,30 +81,27 @@ func NewHils () Hils {
 	return Hils{make([]FontMarker, 0, 10000)}
 }
 
-func (hils *Hils) Add (color string, beg, end int) {
-	hils.hils = append(hils.hils, FontMarker{color, beg, end})
+func (hils *Hils) Add (color string, beg, end defs.Pos) {
+	hils.hils = append(hils.hils, FontMarker{color, defs.NewRng (beg, end)})
 }
 
-func (hils *Hils) GetFonts (fname string, bname string, no int, beg, end int) *Fontify {
-	return &Fontify{fname, bname, no, beg, end, hils.hils}
+func (hils *Hils) GetFonts (fname string, bname string, no int, rng defs.Rng) *Fontify {
+	return &Fontify{fname, bname, no, rng, hils.hils}
 }
 
 type Fontify struct {
 	FName string
 	BName string
 	No  int
-	Beg int
-	End int
+	Rng defs.Rng
 	Markers []FontMarker
 }
 
 func (f Fontify) Write(out *writer.Writer) {
 	out.Beg ("FONTIFY").Write(f.FName).Sep().Write(f.BName).Sep().
-		WriteInt(f.No).Sep().WriteInt(f.Beg).Sep().WriteInt(f.End).Eol()
+		WriteInt(f.No).Sep().WriteRng(f.Rng).Eol()
 	for _, m := range f.Markers {
-		out.Put("  ").Put(m.Color).Sep().
-			WriteInt(m.Beg).Sep().
-			WriteInt(m.End).Eol()
+		out.Put("  ").Put(m.Color).Sep().WriteRng(m.Rng).Eol()
 	}
 	out.End ("FONTIFY")
 }
@@ -118,15 +112,15 @@ type Choice struct {
 	Kind string
 	Name string
 	Full string
-	Pos  token.Pos
-	End  token.Pos
+	Pos  defs.Pos
+	End  defs.Pos
 }
 
 type Completion struct {
 	Pref string
 	Name string
-	Pos  token.Pos
-	End  token.Pos
+	Pos  defs.Pos
+	End  defs.Pos
 	Choices []Choice
 }
 

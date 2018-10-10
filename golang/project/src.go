@@ -31,6 +31,7 @@ func (s *src) GetDir     () *names.Name { return s.dir ; }
 func (s *src) GetName    () *names.Name { return s.name; }
 func (s *src) GetAst     () *  ast.File { return s.ast ; }
 func (s *src) GetFile    () *token.File { return s.file; }
+func (s *src) GetSize    () int { return s.file.Size(); }
 
 func (s *src) GetOuterErrors () scanner.ErrorList { return s.outerErrors; }
 func (s *src) GetInnerErrors () []results.Error   { return s.innerErrors; }

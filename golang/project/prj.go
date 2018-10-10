@@ -9,6 +9,7 @@ import "path/filepath"
 import "go/build"
 import "go/token"
 import "go/ast"
+import "github.com/kouzdra/go-analyzer/defs"
 import "github.com/kouzdra/go-analyzer/env"
 import "github.com/kouzdra/go-analyzer/names"
 //import "github.com/kouzdra/go-analyzer/paths"
@@ -171,6 +172,7 @@ type CompleteProc struct {
 	analyzer.Processor
 	Pos token.Pos
 }
+
 func (p *CompleteProc) Before (n ast.Node) bool {
 	//log.Printf ("Node %d:%d %v\n", n.Pos(), n.End (), n)
 	if n.Pos () <= p.Pos && p.Pos <= n.End () {
@@ -191,11 +193,11 @@ func (p *CompleteProc) Before (n ast.Node) bool {
 					case env.KPackage: k = "PACKAGE"
 					case env.KConst:   k = "CONST"
 					}
-					res = append (res, results.Choice{k, nm, nm, n.Pos(), token.Pos (int(n.Pos ()) + len(nm))})
+					res = append (res, results.Choice{k, nm, nm, defs.Pos (n.Pos()), defs.Pos (int(n.Pos ()) + len(nm))})
 				}
 				return true
 			})
-			p.Results = &results.Completion{pref, n.Name, n.Pos(), n.End(), res}
+			p.Results = &results.Completion{pref, n.Name, defs.Pos (n.Pos()), defs.Pos (n.End()), res}
 		}
 	}
 	return true
@@ -232,7 +234,7 @@ func (p *prj) Analyze (src iproject.ISource, no int) (*results.Errors, *results.
 	a.Analyze ()///
 	//a.Curr.Print()
 	fName := src.GetFile().Name()
-	return a.Errs.GetErrors (fName, no), a.Hils.GetFonts (fName, fName, no, 0, src.GetFile().Size())
+	return a.Errs.GetErrors (fName, no), a.Hils.GetFonts (fName, fName, no, defs.NewRng (defs.Pos (0), defs.Pos (src.GetSize())))
 }
 
 //-------------------------------------------------------------------

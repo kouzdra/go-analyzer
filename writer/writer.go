@@ -4,8 +4,8 @@ import "os"
 import "fmt"
 import "bufio"
 import "strconv"
+import "github.com/kouzdra/go-analyzer/defs"
 import "github.com/kouzdra/go-analyzer/options"
-import "go/token"
 
 type Writer struct {
 	*bufio.Writer
@@ -61,7 +61,11 @@ func (out Writer) WriteInt (n int) Writer {
 	return out.Put(strconv.Itoa(n))
 }
 
-func (out Writer) WritePos (p token.Pos) Writer {
+func (out Writer) WritePos (p defs.Pos) Writer {
 	return out.WriteInt(int (p))
+}
+
+func (out Writer) WriteRng (p defs.Rng) Writer {
+	return out.WritePos(p.Beg).Sep ().WritePos (p.End)
 }
 

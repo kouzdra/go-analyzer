@@ -8,7 +8,7 @@ type IProcessor interface {
 }
 
 type Processor struct {
-        Analyzer
+        *Analyzer
 }
 
 func (p *Processor) Before (n ast.Node) bool { return true }

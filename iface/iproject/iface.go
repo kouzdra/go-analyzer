@@ -73,6 +73,7 @@ type ISource interface {
 	GetName    () *names.Name
 	GetAst     () *  ast.File
 	GetFile    () *token.File
+	GetSize    () int
 	
 	GetOuterErrors () scanner.ErrorList
 	GetInnerErrors () []results.Error
