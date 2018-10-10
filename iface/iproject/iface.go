@@ -4,10 +4,10 @@ import "go/token"
 import "go/scanner"
 import "go/build"
 import "path/filepath"
-import "github.com/kouzdra/go-analyzer/env"
 import "github.com/kouzdra/go-analyzer/defs"
 import "github.com/kouzdra/go-analyzer/names"
 import "github.com/kouzdra/go-analyzer/results"
+import "github.com/kouzdra/go-analyzer/golang/env"
 
 type IProject interface {
 	//	GetOptions() Options

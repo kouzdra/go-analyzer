@@ -4,7 +4,7 @@ import "go/build"
 //import "fmt"
 import "github.com/kouzdra/go-analyzer/names"
 //import "github.com/kouzdra/go-analyzer/paths"
-import "github.com/kouzdra/go-analyzer/env"
+import "github.com/kouzdra/go-analyzer/golang/env"
 import "github.com/kouzdra/go-analyzer/iface/iproject"
 
 type  pkg struct {
