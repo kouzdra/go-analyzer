@@ -1,6 +1,5 @@
 package iproject
 
-import "go/scanner"
 import "path/filepath"
 import "github.com/kouzdra/go-analyzer/defs"
 import "github.com/kouzdra/go-analyzer/names"
@@ -32,8 +31,6 @@ type IDir interface  {
 	GetSub  () [] IDir     
 }
 
-
-
 /*
 type Program interface {
 	GetName() *names.Name
@@ -52,9 +49,6 @@ type IPackage interface {
 	GetDir     () *names.Name
 	GetName    () *names.Name
 	GetSrcs    () map [*names.Name] ISource
-	//GetPackage () *build.Package
-	//GetEnvLcl  () *env.Env
-	//GetEnvGbl  () *env.Env
 
 	Reload ()
 }
@@ -65,9 +59,6 @@ type ISource interface {
 	GetName    () *names.Name
 	GetSize    () int
 	
-	GetOuterErrors () scanner.ErrorList
-	GetInnerErrors () []results.Error
-
 	GetText () string
 	SetText (string)
 	Reload  ()

@@ -33,9 +33,6 @@ func (s *source) GetAst     () *  ast.File { return s.ast ; }
 func (s *source) GetFile    () *token.File { return s.file; }
 func (s *source) GetSize    () int { return s.file.Size(); }
 
-func (s *source) GetOuterErrors () scanner.ErrorList { return s.outerErrors; }
-func (s *source) GetInnerErrors () []results.Error   { return s.innerErrors; }
-
 //-------------------------------------------------------
 
 func NewSource (pkg iproject.IPackage, dir *names.Name, name *names.Name) *source {

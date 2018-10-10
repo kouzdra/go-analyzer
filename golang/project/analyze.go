@@ -911,7 +911,7 @@ func (a *Analyzer) setOuterErrors (e scanner.ErrorList) {
 }
 
 func (a *Analyzer) Analyze () {
-	a.setOuterErrors (a.src.GetOuterErrors())
+	a.setOuterErrors (a.src.outerErrors)
 	a.file =          a.src.GetFile()
 	a.analyzeFileIntr(a.src.GetAst())
 	a.analyzeFileBody(a.src.GetAst())
