@@ -62,3 +62,5 @@ func Put(name string) *Name {
         return cell
 }
 
+var Root = Put("::")
+

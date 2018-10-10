@@ -4,6 +4,7 @@ package env
 import "go/ast"
 import "github.com/kouzdra/go-analyzer/names"
 import "github.com/kouzdra/go-analyzer/paths"
+import "github.com/kouzdra/go-analyzer/golang/stdnames"
 
 
 type Kind int
@@ -105,7 +106,7 @@ func (e *EnvBldr) Close () *Env {
 func NewBldr () *EnvBldr { return &EnvBldr{Subs{make([]*Env, 0, 40), false}, nil} }
 
 func (e *EnvBldr) Declare (k Kind, n *names.Name, p *paths.Path, t ast.Expr, m Mode, v ast.Node) *Decl {
-        if n == names.Dummy {
+        if n == stdnames.Dummy {
                 return nil
         }
         if m == nil { panic ("nil mode decl") }
