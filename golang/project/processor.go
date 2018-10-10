@@ -1,4 +1,4 @@
-package analyzer
+package project
 
 import "go/ast"
 

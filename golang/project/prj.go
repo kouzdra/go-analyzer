@@ -13,8 +13,6 @@ import "github.com/kouzdra/go-analyzer/defs"
 import "github.com/kouzdra/go-analyzer/names"
 //import "github.com/kouzdra/go-analyzer/paths"
 import "github.com/kouzdra/go-analyzer/golang/env"
-import "github.com/kouzdra/go-analyzer/golang/analyzer"
-import "github.com/kouzdra/go-analyzer/golang/source"
 import "github.com/kouzdra/go-analyzer/results"
 //import "github.com/kouzdra/go-analyzer/options"
 import "github.com/kouzdra/go-analyzer/iface/iproject"
@@ -107,7 +105,7 @@ func (p *prj) makePackage (bpkg *build.Package) iproject.IPackage {
 		pkg = newPkg (p, bpkg)
 		for _, f := range bpkg.GoFiles {
 			ff := names.Put (f)
-			pkg.GetSrcs()[ff] = source.New(pkg, name, ff)
+			pkg.GetSrcs()[ff] = NewSource(pkg, name, ff)
 		}
 		p.GetPackages () [name] = pkg
 	}
@@ -144,7 +142,7 @@ func (p *prj) Load () {
 	/*for _, pkg := range p.Pkgs {
 		for n, f := range pkg.Srcs {
 			/.MsgF ("Src [%s]: Dir=%s", n, f.Dir)
-			//f.UpdateAst()
+			//f.updateAst()
 			//printer.Fprint (p.Server.Writer.Writer, f.FSet, f.Ast)
 		}
 	}*/
@@ -170,7 +168,7 @@ func (p *prj) GetSrc (fname string) (iproject.ISource, error) {
 
 type CompleteProc struct {
 	Results *results.Completion
-	analyzer.Processor
+	Processor
 	Pos token.Pos
 }
 
@@ -205,9 +203,9 @@ func (p *CompleteProc) Before (n ast.Node) bool {
 }
 
 func (p *prj) Complete (src iproject.ISource, pos defs.Pos) *results.Completion {
-	src.UpdateAst()
-	a := analyzer.New(p, src, false)
-	completeProcessor := CompleteProc{nil, analyzer.Processor{a}, token.Pos(a.Src.GetFile().Base () + int (pos))}
+	src.(*source).updateAst()
+	a := NewAnalyzer(p, src, false)
+	completeProcessor := CompleteProc{nil, Processor{a}, token.Pos(a.src.GetFile().Base () + int (pos))}
 	a.NodeProc = &completeProcessor
 	a.Analyze()
 	return completeProcessor.Results
@@ -216,25 +214,25 @@ func (p *prj) Complete (src iproject.ISource, pos defs.Pos) *results.Completion 
 //-------------------------------------------------------------------
 
 func (p *prj) Analyze (src iproject.ISource, no int) (*results.Errors, *results.Fontify) {
-	pkg := src.GetPackage()
-	pkg.UpdateAsts ()
-	//src.UpdateAst()
+	pkgGo := src.GetPackage().(*pkg)
+	pkgGo.updateAsts ()
+	//src.updateAst()
 	
 	if false {
-		fmt.Printf ("imports of package [%s]\n", pkg.GetName ().Name);
-		for _, name := range  pkg.GetPackage ().Imports {
+		fmt.Printf ("imports of package [%s]\n", pkgGo.GetName ().Name);
+		for _, name := range pkgGo.GetPackage ().Imports {
 			fmt.Printf ("  Import [%s]\n", name);
 		}
-		fmt.Printf ("Files of package [%s]\n", pkg.GetName ().Name);
-		for _, name := range  pkg.GetPackage ().GoFiles {
+		fmt.Printf ("Files of package [%s]\n", pkgGo.GetName ().Name);
+		for _, name := range pkgGo.GetPackage ().GoFiles {
 			fmt.Printf ("  File [%s]\n", name);
 		}
 	}
 	
-	a := analyzer.New(p, src, true)
+	a := NewAnalyzer(p, src, true)
 	a.Analyze ()///
 	//a.Curr.Print()
-	fName := a.Src.GetFile().Name()
+	fName := a.src.GetFile().Name()
 	return a.Errs.GetErrors (fName, no), a.Hils.GetFonts (fName, fName, no, defs.NewRng (defs.Pos (0), defs.Pos (src.GetSize())))
 }
 

@@ -1,4 +1,4 @@
-package analyzer
+package project
 
 //import "os"
 //import "fmt"
@@ -14,7 +14,6 @@ import "github.com/kouzdra/go-analyzer/defs"
 import "github.com/kouzdra/go-analyzer/names"
 import "github.com/kouzdra/go-analyzer/paths"
 import "github.com/kouzdra/go-analyzer/golang/env"
-import "github.com/kouzdra/go-analyzer/golang/source"
 import "github.com/kouzdra/go-analyzer/iface/iproject"
 
 const (
@@ -70,7 +69,7 @@ const (
 type ker struct {
 	Hils results.Hils
 	Errs results.Errs
-	Src  *source.Src
+	src  *source
 	path *paths.Path // TODO
 	gbl *env.Env
 	lcl *env.Env
@@ -89,18 +88,18 @@ type Analyzer struct {
 	NodeProc IProcessor
 }
 
-func newKer(modeTab *env.ModeTab, src *source.Src) *ker {
+func newKer(modeTab *env.ModeTab, src *source) *ker {
 	return &ker{
 		Errs   :results.NewErrs(),
 		Hils   :results.NewHils(),
-		Src    :src,
+		src    :src,
 		gbl    :env.Empty,
 		lcl    :env.Empty,
 		modeTab:modeTab}
 }
 
 //	ker := analyzer.NewKer (p.GetModeTab())
-func new(ker *ker, fileSet *token.FileSet, collect  bool) *Analyzer {
+func newAnalyzer(ker *ker, fileSet *token.FileSet, collect  bool) *Analyzer {
 	var res Analyzer
 	res.ker = ker
 	res.fileSet = fileSet
@@ -111,8 +110,8 @@ func new(ker *ker, fileSet *token.FileSet, collect  bool) *Analyzer {
 	return &res
 }
 
-func New(p iproject.IProject, src iproject.ISource, collect  bool) *Analyzer {
-	return new (newKer (p.GetModeTab (), src.(*source.Src)), p.GetFileSet(), collect)
+func NewAnalyzer(p iproject.IProject, src iproject.ISource, collect  bool) *Analyzer {
+	return newAnalyzer (newKer (p.(*prj).GetModeTab (), src.(*source)), p.(*prj).GetFileSet(), collect)
 }
 
 func (a *Analyzer) withEnv (e *env.Env, fn func ()) {
@@ -912,8 +911,8 @@ func (a *Analyzer) setOuterErrors (e scanner.ErrorList) {
 }
 
 func (a *Analyzer) Analyze () {
-	a.setOuterErrors (a.Src.GetOuterErrors())
-	a.file = a.Src.GetFile()
-	a.analyzeFileIntr(a.Src.GetAst())
-	a.analyzeFileBody(a.Src.GetAst())
+	a.setOuterErrors (a.src.GetOuterErrors())
+	a.file =          a.src.GetFile()
+	a.analyzeFileIntr(a.src.GetAst())
+	a.analyzeFileBody(a.src.GetAst())
 }

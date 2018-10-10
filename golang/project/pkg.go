@@ -40,7 +40,7 @@ func (pkg *pkg) Reload () {
 }
 
 
-func (pkg *pkg) UpdateAsts () {
+func (pkg *pkg) updateAsts () {
 	if pkg.GetEnvGbl() == nil || pkg.GetEnvLcl() == nil {
 		gbl := env.NewBldr ()
 		lcl := env.NewBldr ()
@@ -48,7 +48,7 @@ func (pkg *pkg) UpdateAsts () {
 		//pkg.Prj.Server.MsgF ("+Update Package %s\n", pkg.Name)
 		for _, src := range pkg.GetSrcs() {
                         //pkg.Prj.Server.MsgF ("+--Update File %s\n", src.Name)
-                        src.UpdateAst ()
+                        src.(*source).updateAst ()
 		}
 		pkg.envGbl = gbl.Close ()
 		pkg.envLcl = lcl.Close ()

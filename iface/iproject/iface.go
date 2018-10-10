@@ -1,20 +1,13 @@
 package iproject
 
-import "go/token"
 import "go/scanner"
-import "go/build"
 import "path/filepath"
 import "github.com/kouzdra/go-analyzer/defs"
 import "github.com/kouzdra/go-analyzer/names"
 import "github.com/kouzdra/go-analyzer/results"
-import "github.com/kouzdra/go-analyzer/golang/env"
 
 type IProject interface {
-	//	GetOptions() Options
-	GetContext () build.Context
 	GetTree    () []IDir
-	GetFileSet () *token.FileSet
-	GetModeTab () *env.ModeTab
 
 	GetDirs     () []*names.Name
 	GetPackages () map [*names.Name]IPackage
@@ -59,12 +52,11 @@ type IPackage interface {
 	GetDir     () *names.Name
 	GetName    () *names.Name
 	GetSrcs    () map [*names.Name] ISource
-	GetPackage () *build.Package
+	//GetPackage () *build.Package
 	//GetEnvLcl  () *env.Env
 	//GetEnvGbl  () *env.Env
 
 	Reload ()
-	UpdateAsts ()
 }
 
 type ISource interface {
@@ -80,7 +72,6 @@ type ISource interface {
 	SetText (string)
 	Reload  ()
 	Changed (int, int, string)
-	UpdateAst()
 }
 
 func FName (src ISource) string {
