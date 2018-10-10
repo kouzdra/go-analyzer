@@ -1,4 +1,4 @@
-package golang
+package project
 
 import "go/build"
 //import "fmt"

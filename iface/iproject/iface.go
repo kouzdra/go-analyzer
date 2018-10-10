@@ -1,11 +1,11 @@
 package iproject
 
 import "go/token"
-import "go/ast"
 import "go/scanner"
 import "go/build"
 import "path/filepath"
 import "github.com/kouzdra/go-analyzer/env"
+import "github.com/kouzdra/go-analyzer/defs"
 import "github.com/kouzdra/go-analyzer/names"
 import "github.com/kouzdra/go-analyzer/results"
 
@@ -26,7 +26,7 @@ type IProject interface {
 	GetPath () *names.Name
 
 	Load () 
-	Complete  (src ISource, pos int) *results.Completion
+	Complete  (src ISource, pos defs.Pos) *results.Completion
 	Analyze   (src ISource, no int) (*results.Errors, *results.Fontify)
 	FindFiles (no int, pfx string, system bool, max int) *results.Files
 
@@ -60,8 +60,8 @@ type IPackage interface {
 	GetName    () *names.Name
 	GetSrcs    () map [*names.Name] ISource
 	GetPackage () *build.Package
-	GetEnvLcl  () *env.Env
-	GetEnvGbl  () *env.Env
+	//GetEnvLcl  () *env.Env
+	//GetEnvGbl  () *env.Env
 
 	Reload ()
 	UpdateAsts ()
@@ -71,18 +71,15 @@ type ISource interface {
 	GetPackage () IPackage
 	GetDir     () *names.Name
 	GetName    () *names.Name
-	GetAst     () *  ast.File
-	GetFile    () *token.File
 	GetSize    () int
 	
 	GetOuterErrors () scanner.ErrorList
 	GetInnerErrors () []results.Error
 
-	GetText() string
-	SetText(string)
-	Reload ()
+	GetText () string
+	SetText (string)
+	Reload  ()
 	Changed (int, int, string)
-	ReParse ()  (*token.File, *ast.File, scanner.ErrorList)
 	UpdateAst()
 }
 

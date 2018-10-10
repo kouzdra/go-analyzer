@@ -14,7 +14,7 @@ import "github.com/kouzdra/go-analyzer/env"
 import "github.com/kouzdra/go-analyzer/defs"
 import "github.com/kouzdra/go-analyzer/names"
 import "github.com/kouzdra/go-analyzer/paths"
-//import "github.com/kouzdra/go-analyzer/golang/project"
+import "github.com/kouzdra/go-analyzer/golang/source"
 import "github.com/kouzdra/go-analyzer/iface/iproject"
 
 const (
@@ -70,7 +70,7 @@ const (
 type ker struct {
 	Hils results.Hils
 	Errs results.Errs
-	src  iproject.ISource
+	Src  *source.Src
 	path *paths.Path // TODO
 	gbl *env.Env
 	lcl *env.Env
@@ -89,11 +89,11 @@ type Analyzer struct {
 	NodeProc IProcessor
 }
 
-func newKer(modeTab *env.ModeTab, src iproject.ISource) *ker {
+func newKer(modeTab *env.ModeTab, src *source.Src) *ker {
 	return &ker{
 		Errs   :results.NewErrs(),
 		Hils   :results.NewHils(),
-		src    :src,
+		Src    :src,
 		gbl    :env.Empty,
 		lcl    :env.Empty,
 		modeTab:modeTab}
@@ -112,7 +112,7 @@ func new(ker *ker, fileSet *token.FileSet, collect  bool) *Analyzer {
 }
 
 func New(p iproject.IProject, src iproject.ISource, collect  bool) *Analyzer {
-	return new (newKer (p.GetModeTab (), src), p.GetFileSet(), collect)
+	return new (newKer (p.GetModeTab (), src.(*source.Src)), p.GetFileSet(), collect)
 }
 
 func (a *Analyzer) withEnv (e *env.Env, fn func ()) {
@@ -912,8 +912,8 @@ func (a *Analyzer) setOuterErrors (e scanner.ErrorList) {
 }
 
 func (a *Analyzer) Analyze () {
-	a.setOuterErrors (a.src.GetOuterErrors())
-	a.file = a.src.GetFile()
-	a.analyzeFileIntr(a.src.GetAst())
-	a.analyzeFileBody(a.src.GetAst())
+	a.setOuterErrors (a.Src.GetOuterErrors())
+	a.file = a.Src.GetFile()
+	a.analyzeFileIntr(a.Src.GetAst())
+	a.analyzeFileBody(a.Src.GetAst())
 }

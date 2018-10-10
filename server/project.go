@@ -1,6 +1,7 @@
 package server
 
 import "strings"
+import "github.com/kouzdra/go-analyzer/defs"
 import "github.com/kouzdra/go-analyzer/results"
 import "github.com/kouzdra/go-analyzer/options"
 import golang "github.com/kouzdra/go-analyzer/golang/project"
@@ -17,7 +18,7 @@ func NewProject(server *Server) *Project {
 
 //-------------------------------------------------------------------
 
-func (p *Project) Complete (no int, fname string, pos int) {
+func (p *Project) Complete (no int, fname string, pos defs.Pos) {
 	if src, err := p.Project.GetSrc(fname); src != nil {
 		results := p.Project.Complete (src, pos)
 		if results != nil {

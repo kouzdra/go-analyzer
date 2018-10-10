@@ -3,10 +3,11 @@ package server
 import "os"
 import "fmt"
 import "strings"
+import "strconv"
+import "github.com/kouzdra/go-analyzer/defs"
 import "github.com/kouzdra/go-analyzer/results"
 import "github.com/kouzdra/go-analyzer/writer"
 import "github.com/kouzdra/go-analyzer/scanner"
-import "strconv"
 import "github.com/kouzdra/go-analyzer/commands"
 
 type Server struct {
@@ -84,7 +85,7 @@ func (s *Server) Process (cmd commands.Cmd) {
 	case "complete": if chk(2) {
 		pos, err := strconv.Atoi(cmd.Args[1])
 		if err == nil {
-			s.Project.Complete(cmd.No, s.expand(cmd.Args[0]), pos)
+			s.Project.Complete(cmd.No, s.expand(cmd.Args[0]), defs.Pos (pos))
 		}
 	}
 	case "tooltip-info": if chk(1) {

@@ -1,4 +1,4 @@
-package golang
+package project
 
 import "fmt"
 import "log"
@@ -14,6 +14,7 @@ import "github.com/kouzdra/go-analyzer/env"
 import "github.com/kouzdra/go-analyzer/names"
 //import "github.com/kouzdra/go-analyzer/paths"
 import "github.com/kouzdra/go-analyzer/golang/analyzer"
+import "github.com/kouzdra/go-analyzer/golang/source"
 import "github.com/kouzdra/go-analyzer/results"
 //import "github.com/kouzdra/go-analyzer/options"
 import "github.com/kouzdra/go-analyzer/iface/iproject"
@@ -106,7 +107,7 @@ func (p *prj) makePackage (bpkg *build.Package) iproject.IPackage {
 		pkg = newPkg (p, bpkg)
 		for _, f := range bpkg.GoFiles {
 			ff := names.Put (f)
-			pkg.GetSrcs()[ff] = srcNew(pkg, name, ff)
+			pkg.GetSrcs()[ff] = source.New(pkg, name, ff)
 		}
 		p.GetPackages () [name] = pkg
 	}
@@ -203,10 +204,10 @@ func (p *CompleteProc) Before (n ast.Node) bool {
 	return true
 }
 
-func (p *prj) Complete (src iproject.ISource, pos int) *results.Completion {
+func (p *prj) Complete (src iproject.ISource, pos defs.Pos) *results.Completion {
 	src.UpdateAst()
 	a := analyzer.New(p, src, false)
-	completeProcessor := CompleteProc{nil, analyzer.Processor{a}, token.Pos(src.GetFile().Base () + pos)}
+	completeProcessor := CompleteProc{nil, analyzer.Processor{a}, token.Pos(a.Src.GetFile().Base () + int (pos))}
 	a.NodeProc = &completeProcessor
 	a.Analyze()
 	return completeProcessor.Results
@@ -233,7 +234,7 @@ func (p *prj) Analyze (src iproject.ISource, no int) (*results.Errors, *results.
 	a := analyzer.New(p, src, true)
 	a.Analyze ()///
 	//a.Curr.Print()
-	fName := src.GetFile().Name()
+	fName := a.Src.GetFile().Name()
 	return a.Errs.GetErrors (fName, no), a.Hils.GetFonts (fName, fName, no, defs.NewRng (defs.Pos (0), defs.Pos (src.GetSize())))
 }
 

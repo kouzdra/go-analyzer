@@ -1,4 +1,4 @@
-package golang
+package source
 
 //import "os"
 //import "io"
@@ -12,7 +12,7 @@ import "go/ast"
 import "github.com/kouzdra/go-analyzer/names"
 import "github.com/kouzdra/go-analyzer/iface/iproject"
 
-type src struct {
+type Src struct {
 	pkg iproject.IPackage
 	dir  *names.Name
 	name *names.Name
@@ -26,23 +26,23 @@ type src struct {
 
 //-------------------------------------------------------
 
-func (s *src) GetPackage () iproject.IPackage { return s.pkg ; }
-func (s *src) GetDir     () *names.Name { return s.dir ; }
-func (s *src) GetName    () *names.Name { return s.name; }
-func (s *src) GetAst     () *  ast.File { return s.ast ; }
-func (s *src) GetFile    () *token.File { return s.file; }
-func (s *src) GetSize    () int { return s.file.Size(); }
+func (s *Src) GetPackage () iproject.IPackage { return s.pkg ; }
+func (s *Src) GetDir     () *names.Name { return s.dir ; }
+func (s *Src) GetName    () *names.Name { return s.name; }
+func (s *Src) GetAst     () *  ast.File { return s.ast ; }
+func (s *Src) GetFile    () *token.File { return s.file; }
+func (s *Src) GetSize    () int { return s.file.Size(); }
 
-func (s *src) GetOuterErrors () scanner.ErrorList { return s.outerErrors; }
-func (s *src) GetInnerErrors () []results.Error   { return s.innerErrors; }
+func (s *Src) GetOuterErrors () scanner.ErrorList { return s.outerErrors; }
+func (s *Src) GetInnerErrors () []results.Error   { return s.innerErrors; }
 
 //-------------------------------------------------------
 
-func srcNew (pkg iproject.IPackage, dir *names.Name, name *names.Name) *src {
-	return &src{pkg, dir, name, false, "", nil, nil, nil, nil}
+func New (pkg iproject.IPackage, dir *names.Name, name *names.Name) *Src {
+	return &Src{pkg, dir, name, false, "", nil, nil, nil, nil}
 }
 
-func (src *src) FName () string {
+func (src *Src) FName () string {
 	return filepath.Join(src.GetDir().Name, src.GetName().Name)
 }
 
@@ -67,7 +67,7 @@ func readFile (fname string) string {
 	}*/
 }
 
-func (src *src) GetText() string {
+func (src *Src) GetText() string {
 	if !src.actual {
 		src.text = readFile(src.FName ())
 		src.actual = true
@@ -75,7 +75,7 @@ func (src *src) GetText() string {
 	return src.text
 }
 
-func (src *src) Reload () {
+func (src *Src) Reload () {
 	src.actual = false
 	src.text   = ""
 	src.ast    = nil
@@ -84,13 +84,13 @@ func (src *src) Reload () {
 	src.pkg.Reload ()
 }
 
-func (src *src) SetText (text string) {
+func (src *Src) SetText (text string) {
 	src.Reload ()
 	src.text = text
 	src.actual = true
 }
 
-func (src *src) Changed (pos int, end int, newText string) {
+func (src *Src) Changed (pos int, end int, newText string) {
 	old := src.GetText()
 	src.SetText (old[:pos] + newText + old[end:])
 	//src.Reload()U
@@ -98,7 +98,7 @@ func (src *src) Changed (pos int, end int, newText string) {
 	//src.actual = true
 }
 
-func (src *src) ReParse () (*token.File, *ast.File, scanner.ErrorList) {
+func (src *Src) reParse () (*token.File, *ast.File, scanner.ErrorList) {
 	//src.Changed(3, 4, "a")
 	fset := src.GetPackage().GetProject ().GetFileSet()
 	base := token.Pos(fset.Base())
@@ -116,8 +116,8 @@ func (src *src) ReParse () (*token.File, *ast.File, scanner.ErrorList) {
 	return file, ast, elist
 }
 
-func (src *src) UpdateAst () {
+func (src *Src) UpdateAst () {
 	if src.ast == nil {
-		src.file, src.ast, src.outerErrors = src.ReParse ()
+		src.file, src.ast, src.outerErrors = src.reParse ()
 	}
 }
