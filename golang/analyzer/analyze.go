@@ -14,6 +14,7 @@ import "github.com/kouzdra/go-analyzer/env"
 import "github.com/kouzdra/go-analyzer/names"
 import "github.com/kouzdra/go-analyzer/paths"
 //import "github.com/kouzdra/go-analyzer/golang/project"
+import "github.com/kouzdra/go-analyzer/iface/ianalyzer"
 import "github.com/kouzdra/go-analyzer/iface/iproject"
 
 const (
@@ -110,7 +111,7 @@ func new(ker *ker, fileSet *token.FileSet, collect  bool) *Analyzer {
 	return &res
 }
 
-func New(p iproject.IProject, src iproject.ISource, collect  bool) *Analyzer {
+func New(p iproject.IProject, src iproject.ISource, collect  bool) ianalyzer.IAnalyzer {
 	return new (newKer (p.GetModeTab (), src), p.GetFileSet(), collect)
 }
 
@@ -140,7 +141,7 @@ func (a *Analyzer) withFlags (body func()) {
 	a.flags = flags
 }
 
-func (a *Analyzer) PosValid(p token.Pos) bool {
+func (a *Analyzer) posValid(p token.Pos) bool {
 	beg := token.Pos(                a.file.Base())
 	end := token.Pos(a.file.Base() + a.file.Size())
 	return beg <= p && p <= end
@@ -165,7 +166,7 @@ func (a *Analyzer) hilAt (color string, p token.Pos, l int) *Analyzer {
 
 func (a *Analyzer) hilR (color string, beg token.Pos,  end token.Pos)  *Analyzer {
 	if !a.CollectHils { return a }
-	if a.PosValid(beg) && a.PosValid(end) {
+	if a.posValid(beg) && a.posValid(end) {
 		a.Hils.Add (color, a.offset(beg), a.offset(end))
 	}
 	return a
